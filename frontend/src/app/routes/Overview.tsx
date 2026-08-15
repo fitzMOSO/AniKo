@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next'
 import { StatTilesRow } from '@/features/overview/StatTilesRow'
 import { LazyMarketPriceTrendsPanel } from '@/features/pricing/MarketPriceTrendsPanel.lazy'
+import { NearbySuppliersPanel } from '@/features/suppliers/NearbySuppliersPanel'
 import { useSession } from '@/lib/session'
 
 /**
- * Empty slots on purpose. Phases E-G fill the rest:
- *   suppliers -> NearbySuppliers       (Phase E)
+ * Empty slots on purpose. Phases F-G fill the rest:
  *   lots      -> FeaturedLots          (Phase F)
  *   orders    -> RecentOrders          (Phase G)
  */
@@ -28,7 +28,9 @@ export function Overview() {
       <section data-slot="pricing" className="col-span-full lg:col-span-8">
         <LazyMarketPriceTrendsPanel />
       </section>
-      <section data-slot="suppliers" className="col-span-full lg:col-span-4" />
+      <section data-slot="suppliers" className="col-span-full lg:col-span-4">
+        <NearbySuppliersPanel />
+      </section>
       <section data-slot="lots" className="col-span-full lg:col-span-8" />
       <section data-slot="orders" className="col-span-full lg:col-span-4" />
     </>

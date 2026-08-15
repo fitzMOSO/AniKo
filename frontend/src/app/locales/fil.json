@@ -52,5 +52,9 @@
   "suppliers.verified": "Beripikado",
   "suppliers.distance_away": "{{distance}} ang layo",
   "suppliers.empty": "Wala pang beripikadong supplier sa saklaw.",
-  "suppliers.list_label": "Mga beripikadong supplier, pinakamalapit muna"
+  "suppliers.list_label": "Mga beripikadong supplier, pinakamalapit muna",
+  "suppliers.map_label": "Mapa ng mga beripikadong supplier sa malapit",
+  "suppliers.map_loading": "Naglo-load ang mapa ng mga supplier…",
+  "suppliers.map_origin": "Ang iyong kinaroroonan",
+  "suppliers.map_attribution": "&copy; mga kontribyutor ng <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>"
 }

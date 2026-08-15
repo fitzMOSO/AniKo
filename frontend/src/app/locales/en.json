@@ -52,5 +52,9 @@
   "suppliers.verified": "Verified",
   "suppliers.distance_away": "{{distance}} away",
   "suppliers.empty": "No verified suppliers within range yet.",
-  "suppliers.list_label": "Verified suppliers, nearest first"
+  "suppliers.list_label": "Verified suppliers, nearest first",
+  "suppliers.map_label": "Map of nearby verified suppliers",
+  "suppliers.map_loading": "Loading the supplier map…",
+  "suppliers.map_origin": "Your location",
+  "suppliers.map_attribution": "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors"
 }
