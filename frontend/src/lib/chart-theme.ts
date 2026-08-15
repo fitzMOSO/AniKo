@@ -65,6 +65,16 @@ export const SERIES = {
   vegetables: '#09410E',
 } as const
 
+/**
+ * The mockup washes a pale green under the Rice line only. It is decoration,
+ * not data — it encodes no value a reader could misread — so it is deliberately
+ * far too light to be taken for a fourth series, and no contrast threshold
+ * applies to it.
+ */
+export const SERIES_FILL = {
+  rice: '#EAF5E6',
+} as const
+
 export const STATUS = {
   confirmed: { fill: '#E9F3E5', text: '#2C4D38' },
   processing: { fill: '#FDF3DF', text: '#876439' },
