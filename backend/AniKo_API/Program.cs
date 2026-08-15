@@ -1,23 +1,17 @@
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
-builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
-
-app.MapControllers();
+app.MapHealthChecks("/health");
 
 app.Run();
+
+// Note: the .NET 10 Web SDK already emits a *public* Program class for top-level
+// statements, so WebApplicationFactory<Program> resolves without any help here.
+// Do not add `public partial class Program;` — the generated class is not declared
+// partial, so a second declaration is a duplicate-definition error.

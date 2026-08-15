@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="AniKo_API.Tests/AniKo_API.Tests.csproj" />
+  <Project Path="AniKo_API/AniKo_API.csproj" />
+</Solution>
