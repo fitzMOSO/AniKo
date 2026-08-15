@@ -34,6 +34,21 @@ export function formatCurrency(value: number, locale: string): string {
 }
 
 /**
+ * Whole kilometres, via `Intl` rather than a hardcoded " km" suffix so the unit
+ * is placed and spaced the way each locale expects. Fractional precision would
+ * be false confidence: these are straight-line distances between municipal
+ * centres, not road distances.
+ */
+export function formatDistance(km: number, locale: string): string {
+  return new Intl.NumberFormat(resolve(locale), {
+    style: 'unit',
+    unit: 'kilometer',
+    unitDisplay: 'short',
+    maximumFractionDigits: 0,
+  }).format(km)
+}
+
+/**
  * Magnitude only — the caller renders an arrow for direction, so a minus sign
  * here would state it twice.
  */

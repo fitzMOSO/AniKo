@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatCount, formatCurrency, formatPercent } from './format'
+import { formatCount, formatCurrency, formatDistance, formatPercent } from './format'
 
 describe('formatCount', () => {
   it('groups thousands', () => {
@@ -24,6 +24,24 @@ describe('formatCurrency', () => {
 
   it('still renders pesos under the Filipino locale', () => {
     expect(formatCurrency(48760, 'fil')).toContain('₱')
+  })
+})
+
+describe('formatDistance', () => {
+  it('rounds to whole kilometres', () => {
+    expect(formatDistance(90.47, 'en')).toBe('90 km')
+    expect(formatDistance(90.5, 'en')).toBe('91 km')
+    expect(formatDistance(53.3, 'en')).toBe('53 km')
+  })
+
+  it('carries the unit under the Filipino locale too', () => {
+    expect(formatDistance(203.7, 'fil')).toContain('km')
+  })
+
+  // Straight-line distances between municipal centres do not deserve decimals;
+  // showing "90.5 km" would imply a precision the number does not have.
+  it('never shows a fractional kilometre', () => {
+    expect(formatDistance(90.47, 'en')).not.toContain('.')
   })
 })
 
