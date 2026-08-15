@@ -1,1 +1,26 @@
+# Planning docs (local only)
 plan
+
+# .NET build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.userprefs
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+*.swp
+
+# Test output
+TestResults/
+*.coverage
+coverage/
+
+# Environment
+.env
+.env.local
+*.pfx
