@@ -1,8 +1,18 @@
+using AniKo_API.Configuration;
 using AniKo_API.Endpoints;
 using AniKo_API.Middleware;
+using Microsoft.AspNetCore.HttpOverrides;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var listenUrl = PlatformEnvironment.GetListenUrl(builder.Configuration);
+if (listenUrl is not null)
+{
+    builder.WebHost.UseUrls(listenUrl);
+}
+
+var isHosted = PlatformEnvironment.IsHosted(builder.Configuration);
 
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
@@ -10,16 +20,35 @@ builder.Services.AddHealthChecks();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Render's proxy is not in a known network range; clearing these accepts it.
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
 
+// First in the pipeline on purpose: anything downstream that reads the request
+// scheme or client IP must see the values Render's edge forwarded, not the
+// plain-HTTP hop between the proxy and this container.
+app.UseForwardedHeaders();
+
 app.UseExceptionHandler();
+
+// TLS terminates at Render's edge. Redirecting inside the container sees plain
+// HTTP and produces a redirect loop, so this only runs when self-hosted.
+if (!isHosted)
+{
+    app.UseHttpsRedirection();
+}
 
 // Mounted in every environment on purpose: a deployed API that cannot be
 // browsed is half a deliverable. Revisit if this ever serves private data.
 app.MapOpenApi();
 app.MapScalarApiReference();
-
-app.UseHttpsRedirection();
 
 app.MapHealthChecks("/health");
 app.MapInfoEndpoints();
