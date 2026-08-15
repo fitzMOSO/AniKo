@@ -1,3 +1,5 @@
+using AniKo_API.Endpoints;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
@@ -8,6 +10,7 @@ var app = builder.Build();
 app.UseHttpsRedirection();
 
 app.MapHealthChecks("/health");
+app.MapInfoEndpoints();
 
 app.Run();
 
