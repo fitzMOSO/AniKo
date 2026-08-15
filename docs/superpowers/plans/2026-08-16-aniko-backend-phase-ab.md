@@ -1120,7 +1120,7 @@ The deploy is only half of this task. An untested failure path is an assumption,
 - Consumes: `render.yaml` from Task 9
 - Produces: a live URL, recorded in the plan checklist
 
-- [ ] **Step 1: Push the branch and open a PR to `main`**
+- [x] **Step 1: Push the branch and open a PR to `main`**
 
 The branch is already pushed. What remains is the PR. The base is `main`, not
 `master` — `master` was retired after this plan was written.
@@ -1129,17 +1129,17 @@ The branch is already pushed. What remains is the PR. The base is `main`, not
 git push -u origin aniko-backend-phase-ab
 ```
 
-- [ ] **Step 2: Create the Blueprint on Render**
+- [x] **Step 2: Create the Blueprint on Render**
 
 In the Render dashboard: **New → Blueprint**, select this repository, confirm it picks up `render.yaml`, and apply. This is a manual, human step — it requires dashboard authentication and cannot be scripted here.
 
-- [ ] **Step 3: Watch the deploy**
+- [x] **Step 3: Watch the deploy**
 
 Expected in the log, in order: Docker build succeeds → container starts → `Now listening on: http://0.0.0.0:<port>` → health check passes → **Live**.
 
 If it hangs at "port scan timeout", `PORT` is not being honoured — return to Task 7.
 
-- [ ] **Step 4: Verify the live service**
+- [x] **Step 4: Verify the live service**
 
 ```bash
 curl -sS -o /dev/null -w "%{http_code}\n" https://aniko-api.onrender.com/health
@@ -1150,7 +1150,7 @@ Expected: `200`, then the info JSON with `"dataStore": "None (skeleton)"`.
 
 Also open `https://aniko-api.onrender.com/scalar/v1` in a browser and confirm the reference renders.
 
-- [ ] **Step 5: Prove a broken build fails the deploy**
+- [x] **Step 5: Prove a broken build fails the deploy**
 
 Temporarily break the entrypoint:
 
@@ -1162,7 +1162,7 @@ git push
 
 Expected: the container starts, immediately exits, the health check never passes, Render marks the deploy **failed**, and the **previous version keeps serving**. Confirm the last part — `curl /health` should still return 200 throughout.
 
-- [ ] **Step 6: Revert the break**
+- [x] **Step 6: Revert the break**
 
 ```bash
 git revert --no-edit HEAD
