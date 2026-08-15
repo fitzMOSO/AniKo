@@ -1,11 +1,17 @@
 using AniKo_API.Endpoints;
+using AniKo_API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 
