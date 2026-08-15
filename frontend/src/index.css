@@ -5,32 +5,44 @@
  * Three-layer token architecture — see `plan/frontend plan/ui-ux.md`.
  * Primitive -> Semantic -> Component, in one direction only.
  *
- * PHASE A NOTE: every value below is a placeholder. Phase B derives the real
- * palette from `plan/AniKo assets/aniko logo.png` and runs the perceptual
- * distance checks. Components reference the NAMES, so Phase B changes values
- * here and nothing else moves.
+ * Values are measured from the brand assets — see
+ * `docs/superpowers/plans/2026-08-16-aniko-dashboard-phase-b.md` for the
+ * sampling method and the perceptual-check results. Components reference the
+ * NAMES; changing a value here must not require touching a component.
  */
 @theme {
-  /* --- Primitive ------------------------------------------------------- */
-  --color-green-900: #0f3d22;
-  --color-green-800: #14532d;
-  --color-green-500: #22c55e;
-  --color-gold-500: #f0a500;
-  --color-cream-50: #faf8f3;
-  --color-cream-100: #f1ede3;
+  /* --- Primitive -------------------------------------------------------
+   * Sampled from `plan/AniKo assets/aniko logo.png` and the dashboard mockup
+   * PNG with Pillow. These are the brand's actual colours, not an
+   * interpretation of them.
+   */
+  --color-green-950: #023c16;  /* mockup chrome: sidebar active, CTA, Buy toggle */
+  --color-green-900: #004824;  /* logo wordmark — 55.7% of the mark */
+  --color-green-700: #09410e;  /* chart: Vegetables (Mixed) */
+  --color-green-600: #3a942a;  /* chart: Rice (White) */
+  --color-green-500: #54a818;  /* logo light leaf */
+  --color-gold-500: #f0a800;   /* logo wheat and arrow */
+  --color-amber-600: #c68502;  /* chart: Corn, snapped for contrast — see chart-theme.ts */
+  --color-cream-50: #fbfaf8;   /* page background */
+  --color-cream-100: #fcfaf7;  /* sidebar background */
   --color-slate-500: #64748b;
   --color-slate-200: #e2e8f0;
-  --color-red-600: #dc2626;
+  --color-red-600: #da360a;    /* mockup negative delta, snapped for contrast */
 
-  /* --- Semantic -------------------------------------------------------- */
-  --color-primary: var(--color-green-800);
+  /* --- Semantic --------------------------------------------------------
+   * `primary` is the mockup's chrome green, not the logo's wordmark green.
+   * The logo is printed large on white; this green sits behind small text and
+   * needs the extra depth. Both are brand greens — this picks the one the
+   * designer actually used for chrome.
+   */
+  --color-primary: var(--color-green-950);
   --color-primary-strong: var(--color-green-900);
   --color-primary-foreground: #ffffff;
   --color-accent: var(--color-green-500);
   --color-accent-foreground: #ffffff;
   --color-highlight: var(--color-gold-500);
   --color-page: var(--color-cream-50);
-  --color-surface: #ffffff;
+  --color-surface: #fdfdfd;
   --color-muted-fg: var(--color-slate-500);
 
   /* --- Component ------------------------------------------------------- */
