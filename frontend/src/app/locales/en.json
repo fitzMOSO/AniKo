@@ -38,6 +38,7 @@
   "pricing.rice": "Rice (White)",
   "pricing.corn": "Corn (Yellow)",
   "pricing.vegetables": "Vegetables (Mixed)",
+  "pricing.loading": "Loading market price trends…",
   "pricing.source": "Source: AniKo Market Data",
   "pricing.chart_label": "Weekly wholesale price per kilo for rice, corn and vegetables over the selected range.",
   "overview.greeting": "Good morning, {{name}}",

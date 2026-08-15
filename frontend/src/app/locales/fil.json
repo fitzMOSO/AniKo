@@ -38,6 +38,7 @@
   "pricing.rice": "Bigas (Puti)",
   "pricing.corn": "Mais (Dilaw)",
   "pricing.vegetables": "Gulay (Halo-halo)",
+  "pricing.loading": "Naglo-load ang takbo ng presyo sa merkado…",
   "pricing.source": "Pinagmulan: AniKo Market Data",
   "pricing.chart_label": "Lingguhang presyo bawat kilo ng bigas, mais at gulay sa napiling saklaw.",
   "overview.greeting": "Magandang umaga, {{name}}",

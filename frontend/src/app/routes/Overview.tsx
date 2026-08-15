@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { StatTilesRow } from '@/features/overview/StatTilesRow'
-import { MarketPriceTrendsPanel } from '@/features/pricing/MarketPriceTrendsPanel'
+import { LazyMarketPriceTrendsPanel } from '@/features/pricing/MarketPriceTrendsPanel.lazy'
 import { useSession } from '@/lib/session'
 
 /**
@@ -26,7 +26,7 @@ export function Overview() {
         <StatTilesRow />
       </section>
       <section data-slot="pricing" className="col-span-full lg:col-span-8">
-        <MarketPriceTrendsPanel />
+        <LazyMarketPriceTrendsPanel />
       </section>
       <section data-slot="suppliers" className="col-span-full lg:col-span-4" />
       <section data-slot="lots" className="col-span-full lg:col-span-8" />
