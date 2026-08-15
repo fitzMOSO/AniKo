@@ -1,5 +1,6 @@
 using AniKo_API.Endpoints;
 using AniKo_API.Middleware;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +13,11 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 var app = builder.Build();
 
 app.UseExceptionHandler();
+
+// Mounted in every environment on purpose: a deployed API that cannot be
+// browsed is half a deliverable. Revisit if this ever serves private data.
+app.MapOpenApi();
+app.MapScalarApiReference();
 
 app.UseHttpsRedirection();
 
