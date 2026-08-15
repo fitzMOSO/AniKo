@@ -10,6 +10,15 @@ obj/
 *.suo
 *.userprefs
 
+# Node / frontend build output
+# Lives in the root .gitignore rather than frontend/.gitignore on purpose:
+# frontend/.gitignore only exists on the frontend branch, so on any other
+# branch the whole dependency tree showed up as ~12k untracked files.
+node_modules/
+dist/
+dist-ssr/
+*.log
+
 # Visual Studio / Rider / VS Code
 .vs/
 .idea/
