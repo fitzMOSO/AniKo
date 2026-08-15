@@ -64,7 +64,7 @@ The repo currently tracks `bin/`, `obj/`, and `.vs/` (including `.suo`, a binary
 - Consumes: nothing
 - Produces: a clean `git status`, so later tasks can use `git add -A` safely
 
-- [ ] **Step 1: Confirm the problem**
+- [x] **Step 1: Confirm the problem**
 
 ```bash
 git ls-files | grep -E "(/obj/|/bin/|\.vs/)" | head -20
@@ -72,7 +72,7 @@ git ls-files | grep -E "(/obj/|/bin/|\.vs/)" | head -20
 
 Expected: a list of tracked `obj/` and `.vs/` files, including `.suo`.
 
-- [ ] **Step 2: Replace `.gitignore`**
+- [x] **Step 2: Replace `.gitignore`**
 
 Write `.gitignore` at the repo root:
 
@@ -107,7 +107,7 @@ coverage/
 
 Note `frontend/` has its own `.gitignore` covering `node_modules` and `dist`; do not duplicate those here.
 
-- [ ] **Step 3: Untrack the artifacts without deleting them**
+- [x] **Step 3: Untrack the artifacts without deleting them**
 
 ```bash
 git rm -r --cached backend/AniKo_API/obj backend/AniKo_API/bin backend/AniKo_API/.vs backend/AniKo_API/AniKo_API.csproj.user
@@ -115,7 +115,7 @@ git rm -r --cached backend/AniKo_API/obj backend/AniKo_API/bin backend/AniKo_API
 
 Expected: files listed as removed from the index. They remain on disk.
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 ```bash
 git status --short
@@ -124,7 +124,7 @@ git ls-files | grep -E "(/obj/|/bin/|\.vs/|\.user$)" | wc -l
 
 Expected: the second command prints `0`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -148,7 +148,7 @@ The API must build and a test project must run before anything else is added. Th
 - Consumes: nothing
 - Produces: `public partial class Program` — the entry-point type every integration test resolves through
 
-- [ ] **Step 1: Create the test project and solution**
+- [x] **Step 1: Create the test project and solution**
 
 ```bash
 cd backend
@@ -161,7 +161,7 @@ rm AniKo_API/AniKo_API.slnx
 
 Both commands are verified against SDK 10.0.203: `--format slnx` is supported, and the `xunit` template installs xUnit 2.9.3 with `Microsoft.NET.Test.Sdk` 17.14.1. Accept those versions as-is.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 Create `backend/AniKo_API.Tests/SolutionSmokeTests.cs`:
 
@@ -181,7 +181,7 @@ public class SolutionSmokeTests
 }
 ```
 
-- [ ] **Step 3: Run it to verify it fails**
+- [x] **Step 3: Run it to verify it fails**
 
 ```bash
 cd backend && dotnet test AniKo.slnx
@@ -189,7 +189,7 @@ cd backend && dotnet test AniKo.slnx
 
 Expected: FAIL — `Program` is inaccessible, reported as a compile error `CS0122` or `CS0246`.
 
-- [ ] **Step 4: Delete the template and make `Program` public**
+- [x] **Step 4: Delete the template and make `Program` public**
 
 ```bash
 rm backend/AniKo_API/Controllers/WeatherForecastController.cs backend/AniKo_API/WeatherForecast.cs
@@ -221,7 +221,7 @@ public partial class Program;
 
 Note `AddControllers()`, `UseAuthorization()` and `MapControllers()` are gone. There are no controllers and nothing to authorise; leaving them in implies a design that does not exist.
 
-- [ ] **Step 5: Replace the stale `.http` file**
+- [x] **Step 5: Replace the stale `.http` file**
 
 Replace `backend/AniKo_API/AniKo_API.http`:
 
@@ -235,7 +235,7 @@ Accept: text/plain
 ###
 ```
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 ```bash
 cd backend && dotnet test AniKo.slnx
@@ -243,7 +243,7 @@ cd backend && dotnet test AniKo.slnx
 
 Expected: PASS, 1 test.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A
@@ -266,13 +266,13 @@ The info endpoint reports the data store as a string. In Phase B that is `"None 
 - Consumes: `public partial class Program` from Task 2
 - Produces: `InfoEndpoints.MapInfoEndpoints(this IEndpointRouteBuilder)` returning `IEndpointRouteBuilder`; `ApiFactory : WebApplicationFactory<Program>`
 
-- [ ] **Step 1: Add the test package**
+- [x] **Step 1: Add the test package**
 
 ```bash
 cd backend && dotnet add AniKo_API.Tests package Microsoft.AspNetCore.Mvc.Testing --version 10.0.11
 ```
 
-- [ ] **Step 2: Write the shared factory**
+- [x] **Step 2: Write the shared factory**
 
 Create `backend/AniKo_API.Tests/ApiFactory.cs`:
 
@@ -294,7 +294,7 @@ public class ApiFactory : WebApplicationFactory<Program>
 }
 ```
 
-- [ ] **Step 3: Write the failing tests**
+- [x] **Step 3: Write the failing tests**
 
 Create `backend/AniKo_API.Tests/HealthEndpointTests.cs`:
 
@@ -335,7 +335,7 @@ public class HealthEndpointTests : IClassFixture<ApiFactory>
 }
 ```
 
-- [ ] **Step 4: Run to verify failure**
+- [x] **Step 4: Run to verify failure**
 
 ```bash
 cd backend && dotnet test AniKo.slnx
@@ -345,7 +345,7 @@ Expected: `Health_ReturnsOk` passes (health was mapped in Task 2), `Root_Returns
 
 Both are run together deliberately — a test that passes before you write the code is a test that is not testing your code, and knowing which of the two already passes is information.
 
-- [ ] **Step 5: Write the info endpoint**
+- [x] **Step 5: Write the info endpoint**
 
 Create `backend/AniKo_API/Endpoints/InfoEndpoints.cs`:
 
@@ -380,7 +380,7 @@ public static class InfoEndpoints
 }
 ```
 
-- [ ] **Step 6: Map it in `Program.cs`**
+- [x] **Step 6: Map it in `Program.cs`**
 
 In `backend/AniKo_API/Program.cs`, add the using at the top:
 
@@ -395,7 +395,7 @@ app.MapHealthChecks("/health");
 app.MapInfoEndpoints();
 ```
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 ```bash
 cd backend && dotnet test AniKo.slnx
@@ -403,7 +403,7 @@ cd backend && dotnet test AniKo.slnx
 
 Expected: PASS, 3 tests.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A
@@ -424,7 +424,7 @@ An unhandled exception must not leak a stack trace to a public URL. This is the 
 - Consumes: nothing
 - Produces: `AniKo_API.Middleware.GlobalExceptionHandler : IExceptionHandler`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/AniKo_API.Tests/ExceptionHandlingTests.cs`:
 
@@ -492,7 +492,7 @@ This tests the handler directly against a `DefaultHttpContext` rather than throu
 
 The two `DoesNotContain` assertions are the point. Asserting only on the 500 would pass even if the entire exception were serialised into the response body.
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```bash
 cd backend && dotnet test AniKo.slnx --filter ExceptionHandlingTests
@@ -500,7 +500,7 @@ cd backend && dotnet test AniKo.slnx --filter ExceptionHandlingTests
 
 Expected: FAIL to compile — `GlobalExceptionHandler` does not exist.
 
-- [ ] **Step 3: Write the handler**
+- [x] **Step 3: Write the handler**
 
 Create `backend/AniKo_API/Middleware/GlobalExceptionHandler.cs`:
 
@@ -547,7 +547,7 @@ public class GlobalExceptionHandler : IExceptionHandler
 }
 ```
 
-- [ ] **Step 4: Register it in `Program.cs`**
+- [x] **Step 4: Register it in `Program.cs`**
 
 Add the using:
 
@@ -568,7 +568,7 @@ After `var app = builder.Build();` and before `app.UseHttpsRedirection();` add:
 app.UseExceptionHandler();
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 cd backend && dotnet test AniKo.slnx
@@ -576,7 +576,7 @@ cd backend && dotnet test AniKo.slnx
 
 Expected: PASS, 6 tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
@@ -597,7 +597,7 @@ Lays down the shape from the spec so it is visible before it is full. Folders ne
 - Consumes: nothing
 - Produces: the package references Phases C–F depend on
 
-- [ ] **Step 1: Add the packages**
+- [x] **Step 1: Add the packages**
 
 ```bash
 cd backend/AniKo_API
@@ -607,7 +607,7 @@ dotnet add package FluentValidation.DependencyInjectionExtensions --version 12.1
 dotnet add package Scalar.AspNetCore --version 2.16.20
 ```
 
-- [ ] **Step 2: Mark the Design package as a build-time-only dependency**
+- [x] **Step 2: Mark the Design package as a build-time-only dependency**
 
 In `backend/AniKo_API/AniKo_API.csproj`, replace the `Microsoft.EntityFrameworkCore.Design` line with:
 
@@ -620,7 +620,7 @@ In `backend/AniKo_API/AniKo_API.csproj`, replace the `Microsoft.EntityFrameworkC
 
 Without `PrivateAssets`, the design-time tooling ships in the published container for no reason.
 
-- [ ] **Step 3: Enable XML docs**
+- [x] **Step 3: Enable XML docs**
 
 In the first `<PropertyGroup>` of `backend/AniKo_API/AniKo_API.csproj`, add:
 
@@ -631,7 +631,7 @@ In the first `<PropertyGroup>` of `backend/AniKo_API/AniKo_API.csproj`, add:
 
 `1591` is suppressed because requiring a doc comment on every public member produces noise, not documentation. The XML file itself is what feeds OpenAPI descriptions in Phase F.
 
-- [ ] **Step 4: Create the layer folders**
+- [x] **Step 4: Create the layer folders**
 
 ```bash
 cd backend/AniKo_API
@@ -648,7 +648,7 @@ echo 'Business logic: distance, deltas, clamping. Testable without HTTP.' > Serv
 echo 'Environment and connection-string resolution. Platform quirks are isolated here.' > Configuration/README.md
 ```
 
-- [ ] **Step 5: Verify the build is still clean**
+- [x] **Step 5: Verify the build is still clean**
 
 ```bash
 cd backend && dotnet build AniKo.slnx && dotnet test AniKo.slnx
@@ -656,7 +656,7 @@ cd backend && dotnet build AniKo.slnx && dotnet test AniKo.slnx
 
 Expected: build succeeds, 6 tests pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
@@ -677,7 +677,7 @@ A deployed API nobody can browse is half a deliverable, so Scalar is mounted in 
 - Consumes: `ApiFactory` from Task 3
 - Produces: `/openapi/v1.json` and `/scalar/v1` routes
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/AniKo_API.Tests/OpenApiTests.cs`:
 
@@ -714,7 +714,7 @@ public class OpenApiTests : IClassFixture<ApiFactory>
 }
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```bash
 cd backend && dotnet test AniKo.slnx --filter OpenApiTests
@@ -722,7 +722,7 @@ cd backend && dotnet test AniKo.slnx --filter OpenApiTests
 
 Expected: `ScalarReference_IsServed` FAILS with 404. `OpenApiDocument_IsServed` may already pass — `MapOpenApi` is not yet called, so expect 404 there too.
 
-- [ ] **Step 3: Mount OpenAPI and Scalar**
+- [x] **Step 3: Mount OpenAPI and Scalar**
 
 Add the using to `backend/AniKo_API/Program.cs`:
 
@@ -741,7 +741,7 @@ app.MapScalarApiReference();
 
 The no-argument overload is deliberate — see the Global Constraints note about Scalar 2.x. If a title is wanted, add it only after confirming the current options API compiles.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd backend && dotnet test AniKo.slnx
@@ -749,7 +749,7 @@ cd backend && dotnet test AniKo.slnx
 
 Expected: PASS, 8 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -776,7 +776,7 @@ Render assigns a port via `PORT` and terminates TLS at its edge. Both facts need
 - Consumes: nothing
 - Produces: `PlatformEnvironment.IsHosted(IConfiguration)` → `bool`; `PlatformEnvironment.GetListenUrl(IConfiguration)` → `string?`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `backend/AniKo_API.Tests/PlatformEnvironmentTests.cs`:
 
@@ -833,7 +833,7 @@ public class PlatformEnvironmentTests
 
 The `Theory` matters. Binding to `http://0.0.0.0:not-a-port` throws at startup with an error that reads like a Kestrel bug rather than a bad environment variable. Falling back to the default is recoverable; crashing on a malformed value is not.
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```bash
 cd backend && dotnet test AniKo.slnx --filter PlatformEnvironmentTests
@@ -841,7 +841,7 @@ cd backend && dotnet test AniKo.slnx --filter PlatformEnvironmentTests
 
 Expected: FAIL — `PlatformEnvironment` does not exist.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `backend/AniKo_API/Configuration/PlatformEnvironment.cs`:
 
@@ -878,7 +878,7 @@ public static class PlatformEnvironment
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd backend && dotnet test AniKo.slnx --filter PlatformEnvironmentTests
@@ -886,7 +886,7 @@ cd backend && dotnet test AniKo.slnx --filter PlatformEnvironmentTests
 
 Expected: PASS, 9 tests in this class.
 
-- [ ] **Step 5: Wire it into `Program.cs`**
+- [x] **Step 5: Wire it into `Program.cs`**
 
 Add the using:
 
@@ -940,7 +940,7 @@ if (!isHosted)
 
 `UseForwardedHeaders` must come before anything that reads the scheme or client IP, which is why it is first in the pipeline.
 
-- [ ] **Step 6: Verify the whole suite still passes**
+- [x] **Step 6: Verify the whole suite still passes**
 
 ```bash
 cd backend && dotnet build AniKo.slnx && dotnet test AniKo.slnx
@@ -948,7 +948,7 @@ cd backend && dotnet build AniKo.slnx && dotnet test AniKo.slnx
 
 Expected: build succeeds, 17 tests pass.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A
@@ -968,7 +968,7 @@ Adapted from the sample's, with three corrections: the sample has a **duplicated
 - Consumes: `backend/AniKo.slnx` from Task 2
 - Produces: an image whose entrypoint is `dotnet AniKo_API.dll`
 
-- [ ] **Step 1: Write `.dockerignore`**
+- [x] **Step 1: Write `.dockerignore`**
 
 Create `.dockerignore` at the repo root:
 
@@ -989,7 +989,7 @@ frontend/
 
 `frontend/` is excluded because the API image has no use for it. Sending it would slow every build for nothing. Phase G builds the frontend as a separate Render static site, not from this image.
 
-- [ ] **Step 2: Write the Dockerfile**
+- [x] **Step 2: Write the Dockerfile**
 
 Create `Dockerfile` at the repo root:
 
@@ -1024,7 +1024,7 @@ ENTRYPOINT ["dotnet", "AniKo_API.dll"]
 
 There is no `EXPOSE` and no hardcoded port. Render assigns the port at runtime and Task 7 binds whatever it assigns; baking a number in here would be misleading at best.
 
-- [ ] **Step 3: Build the image**
+- [x] **Step 3: Build the image**
 
 ```bash
 docker build -t aniko-api:local .
@@ -1032,7 +1032,7 @@ docker build -t aniko-api:local .
 
 Expected: build succeeds. If it fails on the `COPY` of the test `.csproj`, Task 2 did not create the test project at the expected path.
 
-- [ ] **Step 4: Run it the way Render will**
+- [x] **Step 4: Run it the way Render will**
 
 ```bash
 docker run --rm -e PORT=10000 -e RENDER=true -p 10000:10000 --name aniko-api-test aniko-api:local
@@ -1049,7 +1049,7 @@ Expected: `200`, then the info JSON. This is the exact failure mode being guarde
 
 Then stop it with `docker stop aniko-api-test`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -1067,7 +1067,7 @@ git commit -m "feat(backend): add multi-stage Dockerfile and dockerignore"
 - Consumes: `Dockerfile` from Task 8, `/health` from Task 3
 - Produces: a Render service named `aniko-api`
 
-- [ ] **Step 1: Write the blueprint**
+- [x] **Step 1: Write the blueprint**
 
 Create `render.yaml` at the repo root:
 
@@ -1093,7 +1093,7 @@ No `databases:` block yet. Phase C adds Postgres; keeping it out means a failed 
 
 `healthCheckPath` is what makes a failed startup fail the deploy instead of publishing a broken service. It is the entire reason startup errors are fatal rather than logged.
 
-- [ ] **Step 2: Verify the YAML parses**
+- [x] **Step 2: Verify the YAML parses**
 
 ```bash
 python -c "import yaml,sys; yaml.safe_load(open('render.yaml')); print('ok')"
@@ -1101,7 +1101,7 @@ python -c "import yaml,sys; yaml.safe_load(open('render.yaml')); print('ok')"
 
 Expected: `ok`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add render.yaml
@@ -1120,7 +1120,10 @@ The deploy is only half of this task. An untested failure path is an assumption,
 - Consumes: `render.yaml` from Task 9
 - Produces: a live URL, recorded in the plan checklist
 
-- [ ] **Step 1: Push the branch and open a PR to master**
+- [ ] **Step 1: Push the branch and open a PR to `main`**
+
+The branch is already pushed. What remains is the PR. The base is `main`, not
+`master` — `master` was retired after this plan was written.
 
 ```bash
 git push -u origin aniko-backend-phase-ab
