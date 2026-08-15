@@ -23,4 +23,4 @@ COPY --from=build /app/publish .
 # Drop privileges. $APP_UID is provided by the base image.
 USER $APP_UID
 
-ENTRYPOINT ["dotnet", "AniKo_API_BROKEN.dll"]
+ENTRYPOINT ["dotnet", "AniKo_API.dll"]
