@@ -1,0 +1,66 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Everyday backend debugging. Opens Scalar once Kestrel reports its port
+      // rather than guessing the URL.
+      "name": "backend: API (debug)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "backend: build",
+      "program": "${workspaceFolder}/backend/AniKo_API/bin/Debug/net10.0/AniKo_API.dll",
+      "cwd": "${workspaceFolder}/backend/AniKo_API",
+      "stopAtEntry": false,
+      "console": "internalConsole",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://localhost:5089"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+        "uriFormat": "%s/scalar/v1"
+      }
+    },
+    {
+      // Reproduces Render's contract locally: the platform assigns PORT and
+      // terminates TLS at its edge. This is the configuration that exercises
+      // PlatformEnvironment — HTTPS redirection off, forwarded headers on.
+      // If a deploy misbehaves, reproduce it here before touching Render.
+      "name": "backend: API (as Render)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "backend: build",
+      "program": "${workspaceFolder}/backend/AniKo_API/bin/Debug/net10.0/AniKo_API.dll",
+      "cwd": "${workspaceFolder}/backend/AniKo_API",
+      "stopAtEntry": false,
+      "console": "internalConsole",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "RENDER": "true",
+        "PORT": "10000"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+        "uriFormat": "%s/health"
+      }
+    },
+    {
+      "name": "frontend: Vite dev server",
+      "type": "chrome",
+      "request": "launch",
+      "preLaunchTask": "frontend: dev server",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/frontend/src"
+    }
+  ],
+  "compounds": [
+    {
+      // Phase G onwards, when the dashboard actually calls the API.
+      "name": "full stack: API + dashboard",
+      "configurations": ["backend: API (debug)", "frontend: Vite dev server"],
+      "stopAll": true
+    }
+  ]
+}
