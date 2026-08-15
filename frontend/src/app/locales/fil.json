@@ -43,5 +43,13 @@
   "overview.greeting": "Magandang umaga, {{name}}",
   "overview.subtitle": "Ito ang nangyayari sa iyong palengke ngayon.",
   "placeholder.coming_soon": "Hindi pa nabubuo ang {{section}}.",
-  "placeholder.coming_soon_detail": "Nakaplano ang bahaging ito. Walang sira."
+  "placeholder.coming_soon_detail": "Nakaplano ang bahaging ito. Walang sira.",
+  "crop.rice": "Bigas",
+  "crop.corn": "Mais",
+  "crop.vegetables": "Gulay",
+  "suppliers.title": "Mga Beripikadong Supplier sa Malapit",
+  "suppliers.verified": "Beripikado",
+  "suppliers.distance_away": "{{distance}} ang layo",
+  "suppliers.empty": "Wala pang beripikadong supplier sa saklaw.",
+  "suppliers.list_label": "Mga beripikadong supplier, pinakamalapit muna"
 }

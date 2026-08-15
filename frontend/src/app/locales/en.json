@@ -43,5 +43,13 @@
   "overview.greeting": "Good morning, {{name}}",
   "overview.subtitle": "Here's what's happening in your marketplace today.",
   "placeholder.coming_soon": "{{section}} is not built yet.",
-  "placeholder.coming_soon_detail": "This section is planned. Nothing is broken."
+  "placeholder.coming_soon_detail": "This section is planned. Nothing is broken.",
+  "crop.rice": "Rice",
+  "crop.corn": "Corn",
+  "crop.vegetables": "Vegetables",
+  "suppliers.title": "Nearby Verified Suppliers",
+  "suppliers.verified": "Verified",
+  "suppliers.distance_away": "{{distance}} away",
+  "suppliers.empty": "No verified suppliers within range yet.",
+  "suppliers.list_label": "Verified suppliers, nearest first"
 }
