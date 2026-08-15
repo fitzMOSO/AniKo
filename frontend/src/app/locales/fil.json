@@ -16,6 +16,8 @@
   "header.list_produce": "Ilista ang Ani",
   "header.notifications": "Mga Abiso",
   "header.account": "Iyong account",
+  "header.open_menu": "Buksan ang menu ng nabigasyon",
+  "header.close_menu": "Isara ang menu ng nabigasyon",
   "session.verified_account": "Beripikadong Account",
   "session.role_buyer": "Mamimili",
   "session.role_farmer": "Magsasaka",

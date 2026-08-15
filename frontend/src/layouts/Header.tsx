@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Search, SlidersHorizontal, Bell, User, Leaf } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { MobileNav } from './MobileNav'
 
 type Mode = 'buy' | 'sell'
 
@@ -24,7 +25,11 @@ export function Header() {
   )
 
   return (
-    <header className="flex items-center gap-4 px-6 py-4">
+    // `bg-page` is load-bearing, not decorative: a transparent sticky header
+    // lets the page scroll visibly underneath it.
+    <header className="sticky top-0 z-30 flex items-center gap-4 bg-page px-6 py-4">
+      <MobileNav />
+
       <div className="relative flex-1">
         <Search
           aria-hidden="true"

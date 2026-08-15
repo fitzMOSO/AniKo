@@ -16,6 +16,8 @@
   "header.list_produce": "List Produce",
   "header.notifications": "Notifications",
   "header.account": "Your account",
+  "header.open_menu": "Open navigation menu",
+  "header.close_menu": "Close navigation menu",
   "session.verified_account": "Verified Account",
   "session.role_buyer": "Buyer",
   "session.role_farmer": "Farmer",

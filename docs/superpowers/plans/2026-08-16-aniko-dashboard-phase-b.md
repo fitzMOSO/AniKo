@@ -120,7 +120,9 @@ The sidebar is `hidden lg:block` with nothing behind it, so below 1024px the app
 
 **Files:**
 - Create: `frontend/src/layouts/MobileNav.tsx`, `frontend/src/layouts/MobileNav.test.tsx`
-- Modify: `frontend/src/layouts/DashboardShell.tsx`, `frontend/src/layouts/Header.tsx`, `frontend/src/app/locales/en.json`, `frontend/src/app/locales/fil.json`
+- Modify: `frontend/src/layouts/Header.tsx`, `frontend/src/app/locales/en.json`, `frontend/src/app/locales/fil.json`
+
+`DashboardShell.tsx` needs **no change**. Its `hidden lg:block` on the desktop sidebar is correct once a below-`lg` equivalent exists; `MobileNav` mounts inside `Header`, which the shell already renders.
 
 **Interfaces:**
 - Consumes: `Sidebar` from `./Sidebar`, `NAV_ITEMS` from `@/app/nav`
@@ -229,7 +231,9 @@ export function MobileNav() {
   const [open, setOpen] = useState(false)
 
   return (
-    <Drawer.Root open={open} onOpenChange={setOpen}>
+    // swipeDirection defaults to 'down' (a bottom sheet). This panel is anchored
+    // left, so the dismiss gesture has to point left too or the two disagree.
+    <Drawer.Root open={open} onOpenChange={setOpen} swipeDirection="left">
       <Drawer.Trigger
         aria-label={t('header.open_menu')}
         className="flex size-11 items-center justify-center rounded-full bg-surface lg:hidden"
@@ -261,7 +265,9 @@ export function MobileNav() {
 
 `Sidebar` needs no provider — `useSession()` returns a fixture synchronously in Phase A — so `MemoryRouter` alone is enough to render it in the test.
 
-If a part name fails to resolve, check `node_modules/@base-ui/react/drawer/index.d.ts` for the exact export list before substituting anything — do not swap in a different library. Base UI 1.7.0's drawer has **no `side` or `placement` prop**; left placement is expressed purely in the `Drawer.Popup` classes above, which is why they are `inset-y-0 left-0` rather than a prop.
+If a part name fails to resolve, check `node_modules/@base-ui/react/drawer/index.d.ts` for the exact export list before substituting anything — do not swap in a different library.
+
+**Placement is split across two mechanisms, and both are needed.** Base UI 1.7.0 has no `side`/`placement` prop, so the panel's *position* comes from the `Drawer.Popup` classes (`inset-y-0 left-0`). But `Drawer.Root` does take `swipeDirection`, typed `'up' | 'down' | 'left' | 'right'` and defaulting to **`'down'`** — the bottom-sheet case. Left off, a left-anchored panel would be dismissed by swiping *down*, which is incoherent. Set it to `"left"`.
 
 - [ ] **Step 5: Run the test until it passes**
 
