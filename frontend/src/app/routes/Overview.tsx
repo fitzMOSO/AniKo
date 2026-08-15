@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import { StatTilesRow } from '@/features/overview/StatTilesRow'
+import { MarketPriceTrendsPanel } from '@/features/pricing/MarketPriceTrendsPanel'
 import { useSession } from '@/lib/session'
 
 /**
- * Empty slots on purpose. Phases D-G fill the rest:
- *   pricing   -> MarketPriceTrends     (Phase D)
+ * Empty slots on purpose. Phases E-G fill the rest:
  *   suppliers -> NearbySuppliers       (Phase E)
  *   lots      -> FeaturedLots          (Phase F)
  *   orders    -> RecentOrders          (Phase G)
@@ -25,7 +25,9 @@ export function Overview() {
       <section data-slot="stats" className="col-span-full">
         <StatTilesRow />
       </section>
-      <section data-slot="pricing" className="col-span-full lg:col-span-8" />
+      <section data-slot="pricing" className="col-span-full lg:col-span-8">
+        <MarketPriceTrendsPanel />
+      </section>
       <section data-slot="suppliers" className="col-span-full lg:col-span-4" />
       <section data-slot="lots" className="col-span-full lg:col-span-8" />
       <section data-slot="orders" className="col-span-full lg:col-span-4" />

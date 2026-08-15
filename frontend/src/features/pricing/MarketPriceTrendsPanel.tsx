@@ -33,6 +33,24 @@ export function MarketPriceTrendsPanel() {
       timeZone: 'UTC',
     })
 
+  /*
+   * The tooltip gets the whole date. The axis can afford to say "Aug" because
+   * position carries the rest, but a tooltip that also said "Aug" would leave
+   * the reader unable to tell which of four weekly points they are hovering.
+   *
+   * Recharts types `labelFormatter`'s argument as ReactNode rather than string,
+   * so the narrowing is real and not ceremony.
+   */
+  const tooltipLabel = (label: unknown) =>
+    typeof label === 'string'
+      ? new Date(`${label}T00:00:00Z`).toLocaleDateString(i18n.language, {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          timeZone: 'UTC',
+        })
+      : String(label ?? '')
+
   return (
     <div className="rounded-xl bg-surface p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -107,7 +125,7 @@ export function MarketPriceTrendsPanel() {
               formatCurrency(Number(value), i18n.language),
               config[name as (typeof CROPS)[number]]?.label ?? name,
             ]}
-            labelFormatter={tickLabel}
+            labelFormatter={tooltipLabel}
           />
           {/* Decoration only — see SERIES_FILL in chart-theme.ts. */}
           <Area dataKey="rice" stroke="none" fill={SERIES_FILL.rice} isAnimationActive={false} />
