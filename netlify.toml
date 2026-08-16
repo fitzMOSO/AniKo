@@ -1,0 +1,45 @@
+# Netlify build config for the AniKo frontend.
+#
+# The site (aniko-agri.netlify.app) currently serves Netlify's "Page not
+# found" because the project was created without any build settings: the app
+# lives in `frontend/`, not at the repo root, so with no config Netlify
+# publishes the repo root, finds no index.html, and 404s every path. This file
+# is what turns that into a real deploy.
+#
+# ## Placement: repo root with `base`, not `frontend/netlify.toml`
+#
+# CCTMS puts a netlify.toml INSIDE each app directory, because it ships two
+# independent SPAs from one repo and each needs its own site with its own base
+# directory configured in the dashboard. AniKo has one app, so the config lives
+# at the root and names its own base — which means the deploy works from a
+# clean import with NO dashboard settings at all.
+#
+# That distinction matters if the site's "Base directory" field was already set
+# to `frontend` when it was created: Netlify then reads config from THAT
+# directory and ignores this file. If the first deploy after this commit still
+# 404s, clear the base directory in Site configuration > Build & deploy so this
+# file is the one in effect.
+[build]
+  base = "frontend"
+  command = "npm ci && npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Pinned, not floating. Netlify's default build image Node can move under you
+  # between deploys, and a version bump that changes a transitive native build
+  # is the kind of failure that appears with no repo change to explain it.
+  # 22 matches the CCTMS SPAs so all three deploy on the same runtime.
+  NODE_VERSION = "22"
+
+# SPA fallback. The app is client-routed, so any deep link (/fields, /market,
+# a shared map URL) is a path Netlify has no file for and would 404 — the
+# same symptom as the misconfigured build above, from an unrelated cause.
+# Status 200, not 301: this rewrites internally and preserves the URL, whereas
+# a redirect would rewrite the address bar to "/" and lose the route.
+#
+# Must stay LAST. Netlify applies the first matching rule, so a catch-all above
+# any future /api/* proxy would swallow it.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
