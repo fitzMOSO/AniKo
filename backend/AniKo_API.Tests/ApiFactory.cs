@@ -7,6 +7,15 @@ namespace AniKo_API.Tests;
 /// Boots the API in-process for integration tests. Uses the Development environment
 /// so behaviour matches a developer's local run rather than the hosted configuration.
 /// </summary>
+/// <remarks>
+/// That choice has a cost worth naming: because every test here runs in Development,
+/// this suite cannot see any framework default that branches on the environment.
+/// One such default — <c>RouteHandlerOptions.ThrowOnBadRequest</c> — let a parameter
+/// binding failure return a bare, bodiless 400 in production while returning a full
+/// problem+json document in every test. See
+/// <c>Endpoints/BadRequestShapeInProductionTests</c>, which boots in Production
+/// precisely to cover the gap this class leaves.
+/// </remarks>
 public class ApiFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)

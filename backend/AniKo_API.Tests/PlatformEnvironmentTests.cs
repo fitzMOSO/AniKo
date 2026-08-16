@@ -45,4 +45,39 @@ public class PlatformEnvironmentTests
     {
         Assert.Null(PlatformEnvironment.GetListenUrl(Config(("PORT", port))));
     }
+
+    [Fact]
+    public void GetBuildCommit_ReportsLocal_WhenRenderCommitAbsent()
+    {
+        // Deliberately not an empty string or a fake sha: this value is read when
+        // someone already suspects the wrong code is deployed, so "I do not know"
+        // has to be distinguishable from an answer.
+        Assert.Equal(PlatformEnvironment.UnknownBuild, PlatformEnvironment.GetBuildCommit(Config()));
+    }
+
+    [Fact]
+    public void GetBuildCommit_ReportsLocal_WhenRenderCommitIsBlank()
+    {
+        Assert.Equal(
+            PlatformEnvironment.UnknownBuild,
+            PlatformEnvironment.GetBuildCommit(Config(("RENDER_GIT_COMMIT", "   "))));
+    }
+
+    [Fact]
+    public void GetBuildCommit_ShortensToSevenCharacters()
+    {
+        Assert.Equal(
+            "cbc2b73",
+            PlatformEnvironment.GetBuildCommit(
+                Config(("RENDER_GIT_COMMIT", "cbc2b733a64b5abfc4aeb9ac554742a43d486528"))));
+    }
+
+    [Fact]
+    public void GetBuildCommit_DoesNotThrow_OnAValueShorterThanSevenCharacters()
+    {
+        // The value comes from the environment, so it can be anything. This endpoint
+        // must answer when things are wrong, which is exactly when a hand-set or
+        // truncated variable is most likely.
+        Assert.Equal("abc", PlatformEnvironment.GetBuildCommit(Config(("RENDER_GIT_COMMIT", "abc"))));
+    }
 }

@@ -93,6 +93,22 @@ builder.Services.AddSingleton(TimeProvider.System);
 // makes "exists" and "is registered" the same fact.
 builder.Services.AddValidatorsFromAssemblyContaining<PriceTrendsRequestValidator>();
 
+// ThrowOnBadRequest is set explicitly because its default is not a constant: it
+// is true in Development and false everywhere else. That default makes a
+// parameter binding failure behave differently in production than in every test
+// — ApiFactory pins UseEnvironment("Development"), so the whole suite runs on
+// the true side of the branch. A request missing a required query parameter
+// answered 400 with a problem+json body naming the parameter locally, and a 400
+// with no body and no content type on Render. Both are 400, which is why
+// nothing failed; but a client that reads the body to learn which parameter it
+// forgot gets an explanation in development and silence in production, and the
+// contract advertised by ProducesValidationProblem is only half true.
+//
+// Pinning it to true makes the two kinds of 400 — binding and validation —
+// carry the same shape and the same media type in every environment, which is
+// what GlobalExceptionHandler and ValidationFilter were written to guarantee.
+builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
+
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 

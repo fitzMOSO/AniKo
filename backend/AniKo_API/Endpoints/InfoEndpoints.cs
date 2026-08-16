@@ -1,3 +1,5 @@
+using AniKo_API.Configuration;
+
 namespace AniKo_API.Endpoints;
 
 /// <summary>
@@ -20,12 +22,18 @@ public static class InfoEndpoints
 
     public static IEndpointRouteBuilder MapInfoEndpoints(this IEndpointRouteBuilder routes)
     {
-        routes.MapGet("/", () => TypedResults.Ok(new
+        routes.MapGet("/", (IConfiguration configuration) => TypedResults.Ok(new
         {
             name = "AniKo API",
             version = typeof(InfoEndpoints).Assembly.GetName().Version?.ToString() ?? "0.0.0",
             status = "Running",
             dataStore = DataStore,
+
+            // The assembly version above is static across every build, so it cannot
+            // answer "which code is this?". The commit can, and that turned out to be
+            // the question that mattered: a deploy of the right commit once served the
+            // previous one's binary while reporting itself live and healthy.
+            commit = PlatformEnvironment.GetBuildCommit(configuration),
             timestamp = DateTime.UtcNow,
         }))
         .WithName("Root")
