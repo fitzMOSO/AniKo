@@ -15,7 +15,7 @@ public class PriceTrendsServiceTests
         new(
             new FakePriceObservationRepository { Rows = [.. prices ?? []] },
             new FakeCropRepository { Names = [.. crops ?? AllCrops] },
-            new FrozenTimeProvider(Now));
+            new StubDashboardClock(Now));
 
     /// <summary>
     /// <b>The off-by-one, asserted on the count and on the endpoints.</b>
@@ -67,7 +67,7 @@ public class PriceTrendsServiceTests
         var service = new PriceTrendsService(
             repository,
             new FakeCropRepository { Names = AllCrops },
-            new FrozenTimeProvider(Now));
+            new StubDashboardClock(Now));
 
         await service.GetAsync(months: 6);
 

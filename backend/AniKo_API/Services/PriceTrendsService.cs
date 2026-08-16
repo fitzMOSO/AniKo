@@ -17,11 +17,17 @@ namespace AniKo_API.Services;
 /// line, so a missing month silently compresses the x-axis and a crop with no recent data
 /// silently disappears from the legend. Both look like a working chart.
 /// </para>
+/// <para>
+/// The month axis comes from <see cref="IDashboardClock"/>, not the wall clock. A window
+/// counted back from a wall-clock "now" over data that stops at a fixed epoch produces a chart
+/// whose right-hand months are all <see cref="MissingPrice"/> — every series pinned to the floor,
+/// which reads as a market crash rather than as an empty window.
+/// </para>
 /// </remarks>
 public sealed class PriceTrendsService(
     IPriceObservationRepository priceObservations,
     ICropRepository crops,
-    TimeProvider timeProvider) : IPriceTrendsService
+    IDashboardClock clock) : IPriceTrendsService
 {
     /// <summary>
     /// What a crop gets in a month it has no observation for.
@@ -57,7 +63,7 @@ public sealed class PriceTrendsService(
         // months is already validated to [1, 24]; clamping here would turn a frontend bug into a
         // chart quietly showing a different window than the one the user selected. See
         // IPriceTrendsService.
-        var now = timeProvider.GetUtcNow().UtcDateTime;
+        var now = await clock.ReferenceNowAsync(cancellationToken).ConfigureAwait(false);
         var currentMonth = new DateOnly(now.Year, now.Month, 1);
 
         // The off-by-one that matters: the current month is one of the `months` points, so the

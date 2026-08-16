@@ -20,7 +20,7 @@ public class OverviewStatsServiceTests
         new(
             new FakeOrderRepository { StatsRows = [.. orders ?? []] },
             new FakePriceObservationRepository { Rows = [.. prices ?? []] },
-            new FrozenTimeProvider(Now));
+            new StubDashboardClock(Now));
 
     private static decimal ValueOf(AniKo_API.Dtos.OverviewStatsDto dto, string key) =>
         dto.Stats.Single(s => s.Key == key).Value;
@@ -129,7 +129,7 @@ public class OverviewStatsServiceTests
         var service = new OverviewStatsService(
             orderRepository,
             new FakePriceObservationRepository(),
-            new FrozenTimeProvider(Now));
+            new StubDashboardClock(Now));
 
         await service.GetAsync();
 

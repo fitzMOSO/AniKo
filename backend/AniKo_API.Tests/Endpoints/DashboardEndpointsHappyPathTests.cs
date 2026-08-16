@@ -222,19 +222,23 @@ public sealed class DashboardEndpointsHappyPathTests : IDisposable
     }
 
     /// <summary>
-    /// The tile figures match what the seeded orders actually say, over the same trailing window
-    /// the service defines.
+    /// The four tiles agree with the seeded orders, recomputed from the database rather than
+    /// hardcoded.
     /// </summary>
     /// <remarks>
-    /// This is the assertion that distinguishes "the endpoint is wired up" from "the endpoint is
-    /// right". A handler that returned four tiles of zeros would satisfy every structural check
-    /// in this file; only recomputing the figures from the rows catches it.
+    /// This used to anchor on <c>DateTime.UtcNow</c> because the service read the wall clock, and
+    /// that made it a test with an expiry date: the seeded orders span <c>SeedEpoch - 1..36
+    /// days</c>, so around 2026-09-06 the window would have contained nothing and the
+    /// <c>spend &gt; 0</c> assertion below would have failed on a service that was working
+    /// correctly. It anchors on the latest seeded order now — the same instant
+    /// <c>IDashboardClock</c> resolves — so both sides of the comparison move together or not
+    /// at all.
     /// <para>
-    /// The window is recomputed from <c>DateTime.UtcNow</c> because the host resolves
-    /// <see cref="TimeProvider.System"/> — this is the one place these tests cannot anchor on
-    /// <see cref="PostgresFixture.SeedEpoch"/>, since the service under test is reading the wall
-    /// clock. The seeded orders are spread five days apart, so the two clock reads straddling a
-    /// window boundary is not a practical flake.
+    /// Deliberately NOT <see cref="PostgresFixture.SeedEpoch"/>. The newest order sits at
+    /// <c>SeedEpoch - 1 day + 3 hours</c>, so an epoch-anchored window opens 21 hours late and
+    /// drops the order at <c>SeedEpoch - 31 days + 9 hours</c> that the service counts. A
+    /// constant that lands *near* the reference instant is still a second anchor, which is the
+    /// thing this whole change exists to remove.
     /// </para>
     /// </remarks>
     [Fact]
@@ -248,7 +252,15 @@ public sealed class DashboardEndpointsHappyPathTests : IDisposable
 
         await using var db = _fixture.CreateContext();
 
-        var windowStart = DateTime.UtcNow.AddDays(-30);
+        // Anchored on the latest order, not DateTime.UtcNow — see the doc comment above. This is
+        // the same instant IDashboardClock resolves (MAX(created_at)), so this expectation and
+        // the figure it checks are computed over the same 30 days on every future run.
+        //
+        // Not SeedEpoch.AddDays(-30): the newest seeded order sits at SeedEpoch - 1 day + 3
+        // hours, so an epoch-anchored window opens 21 hours late and drops the order at
+        // SeedEpoch - 31 days + 9 hours that the service counts.
+        var referenceNow = await db.Orders.AsNoTracking().MaxAsync(o => o.CreatedAt);
+        var windowStart = referenceNow.AddDays(-30);
 
         var window = await db.Orders
             .AsNoTracking()
@@ -299,7 +311,17 @@ public sealed class DashboardEndpointsHappyPathTests : IDisposable
 
         await using var db = _fixture.CreateContext();
 
-        var now = DateTime.UtcNow;
+        // Anchored on the latest order for the same reason as the test above — one reference
+        // instant, shared with the service — but this one failed more quietly: once the
+        // wall-clock lookback stopped matching any observation, `expected` computed to 0m and
+        // the assertion became 0m == 0m, a green test verifying nothing.
+        //
+        // Note this assertion is not sensitive to the anchor TODAY: AveragePricesAsync picks the
+        // latest month present in the data, and every candidate lookback here still contains
+        // 2026-08. The anchor is what stops that from silently becoming 0m == 0m later, not
+        // something the current run can demonstrate. The mutation check in Task 3 says so out
+        // loud rather than implying this test guards more than it does.
+        var now = await db.Orders.AsNoTracking().MaxAsync(o => o.CreatedAt);
         var lookbackStart = new DateOnly(now.Year, now.Month, 1).AddMonths(-2);
 
         var observations = await db.PriceObservations

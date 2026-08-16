@@ -9,11 +9,12 @@ namespace AniKo_API.Services;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b><see cref="TimeProvider"/> rather than <c>DateTime.UtcNow</c>.</b> Every figure here is
-/// defined relative to "now", so a service that reads the ambient clock is a service whose output
-/// cannot be asserted — a test would have to seed rows relative to the real clock and would then
-/// fail the first time it ran across a window boundary. Injecting the clock turns "the last 30
-/// days" into an argument, and the tests below pin it.
+/// <b><see cref="IDashboardClock"/> rather than <c>DateTime.UtcNow</c> or <see cref="TimeProvider"/>.</b>
+/// Every figure here is defined relative to "now", so a service that reads the ambient clock is
+/// a service whose output cannot be asserted. It is also a service that drifts: these windows
+/// are trailing, the seeded data is not, and reading the wall clock is what made three of these
+/// four tiles due to report zero on 2026-09-06. The clock resolves "now" from the latest
+/// activity in the data instead — see <see cref="IDashboardClock"/>.
 /// </para>
 /// <para>
 /// <b>Always four tiles, in <see cref="StatKeys.All"/> order.</b> The dashboard lays these out in
@@ -25,7 +26,7 @@ namespace AniKo_API.Services;
 public sealed class OverviewStatsService(
     IOrderRepository orders,
     IPriceObservationRepository priceObservations,
-    TimeProvider timeProvider) : IOverviewStatsService
+    IDashboardClock clock) : IOverviewStatsService
 {
     /// <summary>
     /// The length of both the current window and the comparison window immediately before it.
@@ -65,7 +66,7 @@ public sealed class OverviewStatsService(
 
     public async Task<OverviewStatsDto> GetAsync(CancellationToken cancellationToken = default)
     {
-        var now = timeProvider.GetUtcNow().UtcDateTime;
+        var now = await clock.ReferenceNowAsync(cancellationToken).ConfigureAwait(false);
         var currentStart = now.AddDays(-WindowDays);
         var priorStart = now.AddDays(-WindowDays * 2);
 
