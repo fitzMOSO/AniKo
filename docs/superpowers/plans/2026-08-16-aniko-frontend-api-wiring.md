@@ -405,6 +405,15 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Modify: `backend/AniKo_API/Services/OverviewStatsService.cs:25-28` (constructor), `:66-81` (the clock read)
 - Modify: `backend/AniKo_API/Services/PriceTrendsService.cs:21-24` (constructor), `:55-61` (the clock read)
 - Test: `backend/AniKo_API.Tests/Services/OverviewStatsServiceTests.cs`, `backend/AniKo_API.Tests/Services/PriceTrendsServiceTests.cs`
+- Test: `backend/AniKo_API.Tests/Endpoints/DashboardEndpointsHappyPathTests.cs` — the two wall-clock-anchored tests
+
+**Corrected during execution.** This task originally stopped at the service swap, leaving the
+integration-test re-anchor to Task 3, on the belief that both integration tests would keep passing
+in between. They do not: `OverviewStatsFiguresAgreeWithTheSeededOrders` fails immediately with
+`Expected: 3, Actual: 6`, because the service's data-anchored window now catches six non-delivered
+seeded orders while the test's `DateTime.UtcNow` window catches three. The service change and the
+test re-anchor are therefore **one atomic change** — separating them puts `main` through a red
+commit. The re-anchors moved here; Task 3 is now the mutation check alone.
 
 **Interfaces:**
 - Consumes: `IDashboardClock.ReferenceNowAsync(CancellationToken) → Task<DateTime>` and `StubDashboardClock(DateTime)` from Task 1.
@@ -502,45 +511,14 @@ Run: `dotnet test backend/AniKo_API.Tests --filter "FullyQualifiedName~OverviewS
 Expected: PASS, 21 tests (11 + 10). Every asserted date string is unchanged, which is the point —
 the stub feeds the same instant the frozen `TimeProvider` used to.
 
-- [ ] **Step 6: Run the full backend suite**
+- [ ] **Step 6: Re-anchor `OverviewStatsFiguresAgreeWithTheSeededOrders`**
 
-Run: `dotnet test backend/AniKo_API.Tests`
-Expected: PASS, 411 tests, 0 warnings.
+This test currently fails — `Expected: 3, Actual: 6`. The service is right and the test is stale:
+it computes its expectation from `DateTime.UtcNow` while the service now resolves `now` from the
+data. Both sides used to read the wall clock, which is the only reason it ever passed.
 
-- [ ] **Step 7: Commit**
-
-```bash
-git add backend/AniKo_API/Services backend/AniKo_API.Tests/Services
-git commit -m "refactor(backend): anchor stats and trends windows on IDashboardClock
-
-Both services took TimeProvider and computed trailing windows from it.
-Neither needs the wall clock; both need to know when things last
-happened. Every frozen instant and asserted date in their tests is
-unchanged, so the existing assertions keep their meaning.
-
-Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
-```
-
----
-
-## Task 3: Re-anchor the two lying integration tests, and mutation-check them
-
-**Files:**
-- Modify: `backend/AniKo_API.Tests/Endpoints/DashboardEndpointsHappyPathTests.cs` — `OverviewStatsFiguresAgreeWithTheSeededOrders` (~L241, XML doc ~L232-238, the window at ~L251, the assertion at ~L276) and `OverviewStatsAveragePriceUsesTheLatestObservedMonth` (~L290, the window at ~L302-303)
-
-**Interfaces:**
-- Consumes: `PostgresFixture.SeedEpoch` (already exposed, `= DemoDataSeeder.SeedEpoch` = `2026-08-01T00:00:00Z`); the wired services from Task 2.
-- Produces: nothing.
-
-**Why this task is separate from Task 2:** these two tests are the only ones that read the real
-wall clock, because `ApiFactory` does not override `TimeProvider`. Task 2 makes them pass by
-accident — the clock now returns a seeded instant regardless of what the tests compute. This task
-makes them *measure* that, which is a different thing, and the mutation check is what tells the
-two apart.
-
-- [ ] **Step 1: Re-anchor `OverviewStatsFiguresAgreeWithTheSeededOrders`**
-
-Replace the line that reads `var windowStart = DateTime.UtcNow.AddDays(-30);` with:
+In `backend/AniKo_API.Tests/Endpoints/DashboardEndpointsHappyPathTests.cs`, replace
+`var windowStart = DateTime.UtcNow.AddDays(-30);` with:
 
 ```csharp
         // Anchored on the seed epoch, not DateTime.UtcNow — see the doc comment above. The
@@ -549,8 +527,7 @@ Replace the line that reads `var windowStart = DateTime.UtcNow.AddDays(-30);` wi
         var windowStart = PostgresFixture.SeedEpoch.AddDays(-30);
 ```
 
-Replace the XML doc block above the test (the one currently explaining that this is the one place
-these tests cannot anchor on `PostgresFixture.SeedEpoch`) with:
+Replace the XML doc block above the test with:
 
 ```csharp
     /// <summary>
@@ -568,13 +545,16 @@ these tests cannot anchor on `PostgresFixture.SeedEpoch`) with:
     /// </remarks>
 ```
 
-Leave the `Assert.True(stats["spend"] > 0m, ...)` assertion at ~L276 exactly as it is — it is the
-assertion the anchor change exists to keep meaningful.
+Leave the `Assert.True(stats["spend"] > 0m, ...)` assertion exactly as it is — it is the assertion
+the anchor change exists to keep meaningful.
 
-- [ ] **Step 2: Re-anchor `OverviewStatsAveragePriceUsesTheLatestObservedMonth`**
+- [ ] **Step 7: Re-anchor `OverviewStatsAveragePriceUsesTheLatestObservedMonth`**
 
-Replace the two lines that read `var now = DateTime.UtcNow;` and
-`var lookbackStart = new DateOnly(now.Year, now.Month, 1).AddMonths(-2);` with:
+This one currently passes, and that is precisely why it needs changing: its expectation is computed
+from the same drifting window as the service, so once the window empties it asserts `0m == 0m` and
+stays green while verifying nothing.
+
+Replace `var now = DateTime.UtcNow;` and the `lookbackStart` line below it with:
 
 ```csharp
         // Anchored on the epoch for the same reason as the test above, but this one failed more
@@ -584,12 +564,56 @@ Replace the two lines that read `var now = DateTime.UtcNow;` and
         var lookbackStart = new DateOnly(now.Year, now.Month, 1).AddMonths(-2);
 ```
 
-- [ ] **Step 3: Run the two tests to verify they pass**
+- [ ] **Step 8: Run the full backend suite**
 
-Run: `dotnet test backend/AniKo_API.Tests --filter "FullyQualifiedName~OverviewStatsFiguresAgreeWithTheSeededOrders|FullyQualifiedName~OverviewStatsAveragePriceUsesTheLatestObservedMonth"`
-Expected: PASS, 2 tests. (Requires Docker for Testcontainers.)
+Run: `dotnet test backend/AniKo_API.Tests`
+Expected: PASS, 411 tests, 0 warnings.
 
-- [ ] **Step 4: Mutation-check — break the clock and confirm both tests fail**
+- [ ] **Step 9: Commit**
+
+```bash
+git add backend/AniKo_API/Services backend/AniKo_API.Tests/Services backend/AniKo_API.Tests/Endpoints
+git commit -m "refactor(backend): anchor stats and trends windows on IDashboardClock
+
+Both services took TimeProvider and computed trailing windows from it.
+Neither needs the wall clock; both need to know when things last
+happened. Every frozen instant and asserted date in the unit tests is
+unchanged, so the existing assertions keep their meaning.
+
+The two integration tests are re-anchored on SeedEpoch in the same
+commit, because they must be: one computed its expectation from
+DateTime.UtcNow and fails the moment the service stops doing the same.
+The other passed, which was worse — its expectation drifted with the
+service, so an empty window would have made it assert 0m == 0m.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+---
+
+## Task 3: Mutation-check the re-anchored integration tests
+
+**Files:** none permanently. This task temporarily edits
+`backend/AniKo_API/Services/DashboardClock.cs` and reverts it.
+
+**Interfaces:**
+- Consumes: the re-anchored tests and the wired services from Task 2.
+- Produces: evidence, not code.
+
+**Why this is a task at all.** Task 2 left both integration tests green. Green is not the claim
+worth making — the claim is that they would go *red* if the clock regressed. Those are different
+properties, and this repo has already shipped three defects that lived behind assertions which had
+quietly stopped measuring their subject: a `dataStore` field asserted merely non-blank while it
+read `"None (skeleton)"` for three phases, a `ThrowOnBadRequest` default no test could observe
+because the whole suite booted one environment, and
+`OverviewStatsAveragePriceUsesTheLatestObservedMonth` itself, which was on course to assert
+`0m == 0m`. A regression test for a calendar bug that itself degrades with the calendar is worth
+less than no test, because it also consumes the attention that would have found the problem.
+
+**Requires Docker.** Verified available: Docker 29.6.2, and both tests execute in ~850ms against a
+warm daemon with 0 skipped.
+
+- [ ] **Step 1: Mutation-check — break the clock and confirm both tests fail**
 
 Temporarily edit `backend/AniKo_API/Services/DashboardClock.cs`, replacing the body of
 `ReferenceNowAsync` with the pre-fix behaviour:
@@ -608,7 +632,7 @@ figure. `OverviewStatsAveragePriceUsesTheLatestObservedMonth` fails for the same
 not measuring the clock and the whole task has produced nothing — which is exactly the failure
 mode this codebase has already shipped three times.
 
-- [ ] **Step 5: Restore the clock**
+- [ ] **Step 2: Restore the clock**
 
 Revert the mutation:
 
@@ -616,26 +640,20 @@ Revert the mutation:
 git checkout backend/AniKo_API/Services/DashboardClock.cs
 ```
 
-- [ ] **Step 6: Run the full backend suite**
+- [ ] **Step 3: Run the full backend suite**
 
 Run: `dotnet test backend/AniKo_API.Tests`
 Expected: PASS, 411 tests, 0 warnings.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 4: Report — no commit**
 
-```bash
-git add backend/AniKo_API.Tests/Endpoints/DashboardEndpointsHappyPathTests.cs
-git commit -m "test(backend): anchor the two wall-clock integration tests on SeedEpoch
+This task produces no commit. `git status` must be **clean** at the end: the only file it touched
+was reverted in Step 2. If `DashboardClock.cs` still shows as modified, the mutation was not undone
+and the next task would deploy a deliberately broken clock.
 
-One was going to fail around 2026-09-06 on a healthy service. The other
-was worse: its expectation was computed from the same drifting window as
-the service, so once that window emptied it asserted 0m == 0m and passed
-while verifying nothing.
-
-Mutation-checked: reverting IDashboardClock fails both.
-
-Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
-```
+Report which tests failed under the mutation and with what messages. A test that stayed green is
+the finding — it means that assertion is not measuring the clock, and the anchor change bought
+nothing.
 
 ---
 
