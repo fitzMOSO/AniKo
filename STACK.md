@@ -111,6 +111,13 @@ local Docker command so development and production cannot drift apart.
 so a restart does not duplicate demo rows, which matters on Render's free plan
 where instances wake from idle regularly.
 
+### CORS
+`Configuration/CorsPolicy.cs` reads `Cors:AllowedOrigins` and **validates at
+startup** that each entry is scheme + host only. Failing fast here is deliberate:
+ASP.NET Core happily accepts an origin with a path or trailing slash and then
+matches no request at all, producing a CORS failure with nothing in the logs to
+explain it. Covered by `CorsPolicyTests.cs`.
+
 ### Authentication
 **None.** No auth middleware, no JWT or identity packages. `AppUser` and
 `UserRole` exist as data only; the frontend's `useSession()` returns a hardcoded

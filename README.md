@@ -136,7 +136,14 @@ environment variables (double underscore for nesting):
 | `DATABASE_URL` | Render injects a `postgresql://` URI; `ConnectionStringResolver.cs` converts it |
 | `Seed__Demo` | Whether to seed demo data |
 | `Database__MigrateOnStartup` | Run EF migrations at boot (default true) |
+| `Cors__AllowedOrigins__0` | Origins the browser may call the API from |
 | `ASPNETCORE_ENVIRONMENT` | `Development` / `Production` |
+
+The allowed origins list is committed in `appsettings.json` rather than hidden in
+a dashboard — it is not a secret, and a reviewer can see it. Entries must be
+**scheme + host only**, no path and no trailing slash: `CorsPolicy.ResolveOrigins`
+refuses to start otherwise, because ASP.NET Core would accept a path there and
+then silently match nothing.
 
 `appsettings.Development.json` holds throwaway local credentials for the
 disposable container only — there is nothing sensitive in it.
