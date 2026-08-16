@@ -1,3 +1,4 @@
+using AniKo_API.Data.Seed;
 using Microsoft.EntityFrameworkCore;
 
 namespace AniKo_API.Data;
@@ -44,6 +45,13 @@ public static class DbInitializer
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<AniKoDbContext>>();
         var db = scope.ServiceProvider.GetRequiredService<AniKoDbContext>();
 
+        // Defaults to false, the opposite of Database:MigrateOnStartup above, and the asymmetry is
+        // intentional. Migrating is always the right thing to do to a database this app owns.
+        // Writing invented suppliers and orders into one is not, so it has to be asked for. Render
+        // asks for it via Seed__Demo=true because a portfolio deployment with an empty dashboard is
+        // the wrong first impression; a real deployment simply never sets it.
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+
         try
         {
             await db.Database.OpenConnectionAsync(cancellationToken);
@@ -69,9 +77,20 @@ public static class DbInitializer
 
                 await db.Database.MigrateAsync(cancellationToken);
 
-                // Reference data arrives with the migration above; demo data is Phase D and runs
-                // here, inside the same lock, so two instances cannot both seed.
                 logger.LogInformation("Database schema is up to date.");
+
+                // Reference data arrives with the migration above. Demo data runs here, and the
+                // position is load-bearing rather than incidental: DemoDataSeeder checks for its
+                // marker row *before* opening its transaction, so two instances running that check
+                // concurrently would both see "not seeded" and both insert. Inside this lock they
+                // cannot. Move this call out from under the lock and the guard silently stops
+                // guarding — the unique index on SeedHistory.Version turns it into a crash rather
+                // than duplicate data, which is the better of the two failures, but neither is one
+                // to discover on a deploy.
+                if (configuration.GetValue("Seed:Demo", false))
+                {
+                    await DemoDataSeeder.SeedAsync(db, logger, cancellationToken);
+                }
             }
             finally
             {

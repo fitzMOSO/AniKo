@@ -5,6 +5,72 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AniKo — Harvest Better. Trade Together.</title>
+    <meta
+      name="description"
+      content="A farm management and produce trading platform: track fields, plan harvests and trade produce, with mapping and multi-language support."
+    />
+    <meta name="theme-color" content="#070a13" />
+
+    <!--
+      Link preview (Open Graph + Twitter Card).
+
+      Static HTML, not set from React: Facebook, LinkedIn, Slack, iMessage,
+      WhatsApp and Discord all read the served HTML WITHOUT executing
+      JavaScript, so tags applied at runtime are invisible to every one of them.
+
+      ## HOST: these point at the CURRENT origin, not the intended one
+
+      The plan is to serve this at `aniko.fitzdev.studio`. It is not there yet,
+      and `og:image` / `og:url` / canonical must be absolute URLs that actually
+      resolve — pointing them at a hostname with no DNS record yields a preview
+      with no thumbnail, which is strictly worse than pointing at the live
+      Netlify origin. So they name `aniko-agri.netlify.app` today.
+
+      WHEN THE SUBDOMAIN GOES LIVE, four URLs below change (canonical, og:url,
+      og:image, twitter:image) and nothing in the build will remind you — a
+      stale canonical pointing at the .netlify.app origin would tell crawlers
+      that host is the real one and split ranking between the two.
+
+      ## The card image
+
+      Generated in the portfolio repo (`frontend/scripts/generate-og.mjs`) and
+      copied here as `public/og.png`, so every FitzDev property shares one
+      visual system. AniKo's card is currently type-only — there is no captured
+      screenshot yet because this site had no successful publish until the
+      netlify.toml at the repo root. Once it is serving, capture a preview and
+      re-run the generator; the card picks up the art with no change here.
+    -->
+    <link rel="canonical" href="https://aniko-agri.netlify.app/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="FitzDev Studio" />
+    <meta property="og:url" content="https://aniko-agri.netlify.app/" />
+    <meta property="og:title" content="AniKo — Harvest Better. Trade Together." />
+    <meta
+      property="og:description"
+      content="A farm management and produce trading platform with mapping and multi-language support. Built with .NET, React, TypeScript and PostgreSQL."
+    />
+    <meta
+      property="og:image"
+      content="https://aniko-agri.netlify.app/og.png"
+    />
+    <!-- Dimensions let a client reserve the right box before the image lands —
+         the difference between a full-size card and one that collapses to a
+         thumbnail on a slow first fetch. -->
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="AniKo — a farm management and produce trading platform by FitzDev Studio"
+    />
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="AniKo — Harvest Better. Trade Together." />
+    <meta
+      name="twitter:description"
+      content="A farm management and produce trading platform with mapping and multi-language support."
+    />
+    <meta name="twitter:image" content="https://aniko-agri.netlify.app/og.png" />
   </head>
   <body>
     <div id="root"></div>
