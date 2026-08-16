@@ -1,7 +1,9 @@
 using AniKo_API.Configuration;
+using AniKo_API.Data;
 using AniKo_API.Endpoints;
 using AniKo_API.Middleware;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +18,15 @@ var isHosted = PlatformEnvironment.IsHosted(builder.Configuration);
 
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
+
+// ---- Data ----------------------------------------------------------------
+// Resolved once, at startup. On Render this is the `postgresql://` URI injected
+// from the database declared in render.yaml; locally it is the keyword string in
+// appsettings.Development.json. The resolver throws when neither is present
+// rather than defaulting to localhost — a deploy that quietly connects to
+// nothing fails somewhere far away from the cause.
+builder.Services.AddDbContext<AniKoDbContext>(options =>
+    options.UseNpgsql(ConnectionStringResolver.Resolve(builder.Configuration)));
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -52,6 +63,20 @@ app.MapScalarApiReference();
 
 app.MapHealthChecks("/health");
 app.MapInfoEndpoints();
+
+// Before the first request, not on a background thread: a request served against
+// a half-migrated schema is the thing this exists to prevent, and Render's health
+// check must not see a 200 until the schema is known good. Failure throws out of
+// here, the process exits non-zero, the deploy fails, and the previous version
+// keeps serving.
+//
+// The switch is not a test convenience bolted on: an operator running migrations
+// as a separate step wants it too. It defaults to true, so forgetting it in
+// production is not a failure mode — you have to opt out on purpose.
+if (builder.Configuration.GetValue("Database:MigrateOnStartup", true))
+{
+    await DbInitializer.InitializeAsync(app.Services);
+}
 
 app.Run();
 

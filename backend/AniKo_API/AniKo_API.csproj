@@ -18,6 +18,24 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <!--
+      Declared explicitly, and not only because EF is used directly.
+
+      Without it the build breaks in the *test* project with CS1705. The chain:
+      `Design` above is `PrivateAssets=all`, so its EF Core 10.0.11 does not flow
+      to consumers — but it is what this project compiles against. The Npgsql
+      provider's floor is EF Core 10.0.4, so that is all the test project sees
+      transitively, and referencing an assembly built against 10.0.11 from a
+      project resolving 10.0.4 is an error, not a warning.
+
+      Fixed here rather than in the test project on purpose: the test project
+      does not depend on EF Core in its own right, it depends on this API. A
+      version pin added there would be a workaround sitting where nobody would
+      think to look when the next EF package moves. `Relational` rather than
+      plain `EntityFrameworkCore` because it drags Core and Abstractions with it;
+      pinning only the core package leaves Relational conflicting (MSB3277).
+    -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.11" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.16.20" />
   </ItemGroup>

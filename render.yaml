@@ -1,3 +1,26 @@
+databases:
+  # `plan: free` is stated explicitly and must stay that way. Omitting `plan`
+  # does not give you a free database — Render's blueprint reference says it
+  # "uses basic-256mb for a new database", which is a paid instance type. The
+  # failure mode is a surprise bill, not an error message.
+  #
+  # Two free-tier facts that are not code problems but will bite on a calendar:
+  # a free Postgres instance expires 30 days after creation (then a 14-day grace
+  # period before Render deletes it and its data), there are no backups of any
+  # kind, and a workspace may hold only one at a time. For a portfolio demo that
+  # is an acceptable trade; it is written down here so the expiry is a known
+  # date rather than a mystery outage.
+  - name: aniko-db
+    plan: free
+    region: singapore
+    databaseName: aniko
+    user: aniko
+    # Pinned rather than left to drift. The migration is developed and reverted
+    # against Postgres 17 locally, and "it worked on my machine" is worth very
+    # little when the machine runs a different major version. This value cannot
+    # be changed after creation.
+    postgresMajorVersion: "17"
+
 services:
   - type: web
     name: aniko-api
@@ -11,3 +34,21 @@ services:
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
+
+      # Render's blueprint reference describes `connectionString` as the URL for
+      # reaching the datastore "over the private network" — the internal
+      # hostname, which is why no ipAllowList is needed above for the API's own
+      # traffic. The value arrives as a `postgresql://` URI, which Npgsql cannot
+      # parse; `ConnectionStringResolver` converts it.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: aniko-db
+          property: connectionString
+
+      # Demo seeding on, deliberately. This is a portfolio deployment and an
+      # empty dashboard is the wrong first impression. It is a config key rather
+      # than a hardcode precisely so a real deployment can turn it off without a
+      # code change. The double underscore is .NET's separator for the nested
+      # key `Seed:Demo`.
+      - key: Seed__Demo
+        value: "true"
