@@ -143,6 +143,13 @@ internal sealed class FakePriceObservationRepository
 
         return Task.FromResult(rows);
     }
+
+    /// <summary>
+    /// Derived from <see cref="Rows"/> rather than a settable constant, so the fake cannot claim
+    /// a latest month that disagrees with the data it serves.
+    /// </summary>
+    public Task<DateOnly?> LatestMonthAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(Rows.Count == 0 ? (DateOnly?)null : Rows.Max(r => r.Month));
 }
 
 internal sealed class FakeCropRepository : UnusedRepositoryMembers<Crop>, ICropRepository

@@ -15,4 +15,15 @@ public interface IPriceObservationRepository : IRepository<PriceObservation>
     Task<IReadOnlyList<MonthlyCropPrice>> ListMonthlyAveragesAsync(
         DateOnly firstMonth,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The most recent month that has any observation, or <c>null</c> when the table is empty.
+    /// </summary>
+    /// <remarks>
+    /// This is the price series' own "now". It is deliberately NOT
+    /// <see cref="AniKo_API.Services.IDashboardClock"/>: that resolves from orders, and orders and
+    /// observations are seeded on different anchors, so borrowing one for the other reintroduces
+    /// exactly the two-drifting-anchors defect this codebase has now fixed twice.
+    /// </remarks>
+    Task<DateOnly?> LatestMonthAsync(CancellationToken cancellationToken = default);
 }

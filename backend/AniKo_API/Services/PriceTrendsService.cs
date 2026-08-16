@@ -63,8 +63,20 @@ public sealed class PriceTrendsService(
         // months is already validated to [1, 24]; clamping here would turn a frontend bug into a
         // chart quietly showing a different window than the one the user selected. See
         // IPriceTrendsService.
-        var now = await clock.ReferenceNowAsync(cancellationToken).ConfigureAwait(false);
-        var currentMonth = new DateOnly(now.Year, now.Month, 1);
+        // The price series' own latest month, not the order clock's. These are seeded on
+        // different anchors and sit one month apart in production; using the order clock here
+        // opened the window one month early, which rendered as a leading all-zero column that
+        // MissingPrice's own doc comment describes as reading like missing data.
+        //
+        // Falls back to the clock only when there are no observations at all. In that case every
+        // point is MissingPrice regardless, so the window's position is unobservable — but a
+        // window anchored on *something* keeps the point count honest.
+        var latestObserved = await priceObservations
+            .LatestMonthAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var currentMonth = latestObserved ?? DateOnlyFromClock(
+            await clock.ReferenceNowAsync(cancellationToken).ConfigureAwait(false));
 
         // The off-by-one that matters: the current month is one of the `months` points, so the
         // window opens `months - 1` months back. Subtracting `months` yields months+1 points and
@@ -118,4 +130,7 @@ public sealed class PriceTrendsService(
         // part of the contract — a line chart handed unordered points draws a scribble.
         return new PriceTrendsDto(points);
     }
+
+    private static DateOnly DateOnlyFromClock(DateTime instant) =>
+        new(instant.Year, instant.Month, 1);
 }

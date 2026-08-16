@@ -79,7 +79,7 @@ public sealed class OverviewStatsService(
         var prior = rows.Where(r => r.CreatedAt >= priorStart && r.CreatedAt < currentStart).ToList();
 
         var (currentAvgPrice, priorAvgPrice) =
-            await AveragePricesAsync(now, cancellationToken).ConfigureAwait(false);
+            await AveragePricesAsync(cancellationToken).ConfigureAwait(false);
 
         // Keyed rather than positional so the emission loop below can assert the order comes from
         // StatKeys.All and not from the order the values happen to be computed in.
@@ -133,10 +133,22 @@ public sealed class OverviewStatsService(
     /// </para>
     /// </remarks>
     private async Task<(decimal Current, decimal Prior)> AveragePricesAsync(
-        DateTime now,
         CancellationToken cancellationToken)
     {
-        var firstMonth = new DateOnly(now.Year, now.Month, 1).AddMonths(-(PriceLookbackMonths - 1));
+        // Same reason as PriceTrendsService: the lookback is over observations, so it counts back
+        // from the observations' latest month. The projection below already picks the latest
+        // month PRESENT in the rows — this makes the filter agree with it instead of quietly
+        // handing it a window that could exclude everything.
+        var latestObserved = await priceObservations
+            .LatestMonthAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (latestObserved is null)
+        {
+            return (0m, 0m);
+        }
+
+        var firstMonth = latestObserved.Value.AddMonths(-(PriceLookbackMonths - 1));
 
         var rows = await priceObservations
             .ListMonthlyAveragesAsync(firstMonth, cancellationToken)

@@ -5,9 +5,26 @@ namespace AniKo_API.Tests.Services;
 
 public class PriceTrendsServiceTests
 {
-    private static readonly DateTime Now = new(2026, 8, 16, 12, 0, 0, DateTimeKind.Utc);
+    private static readonly DateTime Now = new(2026, 7, 31, 3, 0, 0, DateTimeKind.Utc);
 
     private static readonly string[] AllCrops = ["rice", "corn", "vegetables"];
+
+    /// <summary>
+    /// Observation rows whose latest month is 2026-08 — where the seeder's price history actually
+    /// ends, one month past <see cref="Now"/>.
+    /// </summary>
+    /// <remarks>
+    /// The window tests below hold these so they anchor on the observations, which is the path
+    /// production takes. They used to hold nothing, which quietly routed them through the
+    /// no-observations fallback while their names still said "the current month" — and with two
+    /// "currents" in play, the observations' latest month and the clock's, a bare literal no
+    /// longer says which one it means. The fallback has its own test rather than being reached by
+    /// accident here.
+    /// </remarks>
+    private static readonly MonthlyCropPrice[] AnchoredOnAugust2026 =
+    [
+        new(new DateOnly(2026, 8, 1), "rice", 52.10m),
+    ];
 
     private static PriceTrendsService Build(
         IEnumerable<MonthlyCropPrice>? prices = null,
@@ -29,7 +46,7 @@ public class PriceTrendsServiceTests
     [Fact]
     public async Task GetAsync_ThreeMonths_YieldsExactlyThreePointsEndingOnTheCurrentMonth()
     {
-        var result = await Build().GetAsync(months: 3);
+        var result = await Build(AnchoredOnAugust2026).GetAsync(months: 3);
 
         Assert.Equal(3, result.Points.Count);
         Assert.Equal(["2026-06-01", "2026-07-01", "2026-08-01"], [.. result.Points.Select(p => p.Date)]);
@@ -38,7 +55,7 @@ public class PriceTrendsServiceTests
     [Fact]
     public async Task GetAsync_OneMonth_YieldsOnlyTheCurrentMonth()
     {
-        var result = await Build().GetAsync(months: 1);
+        var result = await Build(AnchoredOnAugust2026).GetAsync(months: 1);
 
         var point = Assert.Single(result.Points);
         Assert.Equal("2026-08-01", point.Date);
@@ -48,11 +65,33 @@ public class PriceTrendsServiceTests
     [Fact]
     public async Task GetAsync_TwelveMonths_CrossesTheYearBoundaryCorrectly()
     {
-        var result = await Build().GetAsync(months: 12);
+        var result = await Build(AnchoredOnAugust2026).GetAsync(months: 12);
 
         Assert.Equal(12, result.Points.Count);
         Assert.Equal("2025-09-01", result.Points[0].Date);
         Assert.Equal("2026-08-01", result.Points[^1].Date);
+    }
+
+    /// <summary>
+    /// With no observations at all, the window falls back to the order clock.
+    /// </summary>
+    /// <remarks>
+    /// The fallback's position is unobservable in the response — every point is
+    /// <c>MissingPrice</c> either way — so this pins the point COUNT and the fact that the window
+    /// ends on the clock's month rather than throwing or yielding nothing. A fresh database
+    /// before the seeder runs is a legitimate state, not an error.
+    /// <para>
+    /// The asserted month here is the clock's, deliberately: this is the one test whose subject
+    /// IS the clock anchor. Every other window test in this file anchors on the observations.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public async Task GetAsync_NoObservations_FallsBackToTheClockMonth()
+    {
+        var result = await Build().GetAsync(months: 3);
+
+        Assert.Equal(3, result.Points.Count);
+        Assert.Equal(["2026-05-01", "2026-06-01", "2026-07-01"], [.. result.Points.Select(p => p.Date)]);
     }
 
     /// <summary>
@@ -62,7 +101,7 @@ public class PriceTrendsServiceTests
     [Fact]
     public async Task GetAsync_AsksTheRepositoryForTheFirstMonthOfTheWindow()
     {
-        var repository = new FakePriceObservationRepository();
+        var repository = new FakePriceObservationRepository { Rows = AnchoredOnAugust2026 };
 
         var service = new PriceTrendsService(
             repository,

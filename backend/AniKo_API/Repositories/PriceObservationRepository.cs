@@ -54,4 +54,13 @@ public sealed class PriceObservationRepository : Repository<PriceObservation>, I
                 Math.Round(g.Average(p => p.PricePerKg), 2)))
             .ToListAsync(cancellationToken);
     }
+
+    /// <inheritdoc/>
+    public async Task<DateOnly?> LatestMonthAsync(CancellationToken cancellationToken = default)
+    {
+        // Nullable projection before Max: MaxAsync over a non-nullable DateOnly throws on an
+        // empty table rather than yielding a null, and an empty price table is a legitimate
+        // state (a fresh database before the seeder runs), not an error.
+        return await Query().Select(o => (DateOnly?)o.Month).MaxAsync(cancellationToken);
+    }
 }
