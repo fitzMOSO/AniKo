@@ -6,8 +6,17 @@ namespace AniKo_API.Endpoints;
 /// </summary>
 public static class InfoEndpoints
 {
-    /// <summary>Reported by <c>/</c>. Phase C replaces this with "PostgreSQL".</summary>
-    public const string DataStore = "None (skeleton)";
+    /// <summary>
+    /// Reported by <c>/</c>.
+    /// </summary>
+    /// <remarks>
+    /// This said <c>"None (skeleton)"</c> with a note that Phase C would replace it — and Phase C
+    /// came and went with the constant untouched, so for three phases the one endpoint whose job
+    /// is to answer "what is this talking to?" without log access confidently answered "nothing"
+    /// while serving data out of Postgres. Nothing failed, which is why it survived: a stale
+    /// constant is indistinguishable from a correct one until someone acts on it.
+    /// </remarks>
+    public const string DataStore = "PostgreSQL";
 
     public static IEndpointRouteBuilder MapInfoEndpoints(this IEndpointRouteBuilder routes)
     {

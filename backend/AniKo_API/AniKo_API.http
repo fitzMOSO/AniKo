@@ -1,7 +1,118 @@
-@AniKo_API_HostAddress = http://localhost:5089
+# AniKo API — manual request collection
+#
+# Two hosts, because the interesting failures are the ones that only happen on one of them:
+# CORS is a no-op locally and load-bearing in production, and the cold start below does not exist
+# on a developer's machine at all. Switch by commenting out the other @host line.
+#
+# The Render hostname really is `aniko-api-4emi` — Render appends a suffix when the service name
+# is taken. The bare `aniko-api.onrender.com` resolves and answers **404 from Render's edge**,
+# not NXDOMAIN, so a typo here looks like a routing bug in this API rather than a wrong host.
 
-### Health check
-GET {{AniKo_API_HostAddress}}/health
+@host = http://localhost:5199
+# @host = https://aniko-api-4emi.onrender.com
+
+# The free Render instance sleeps after ~15 minutes idle. A cold request takes ~22s wall clock
+# (measured: 22.4s cold, 0.096s warm) and 36ms of that is the TCP connect — so a slow response
+# here is the container booting, not the network, and not this API being slow. Send /health first
+# to absorb the wake-up before timing anything else.
+
+### Health — also the wake-up call for a sleeping instance
+GET {{host}}/health
 Accept: text/plain
+
+### Service identity — which build is this, and what is it talking to?
+GET {{host}}/
+Accept: application/json
+
+### OpenAPI document
+GET {{host}}/openapi/v1.json
+Accept: application/json
+
+
+############################################################
+# Dashboard — the five panels
+############################################################
+
+### Overview stats — the four tiles. No parameters; windows come from the server clock.
+GET {{host}}/api/v1/buyer/overview/stats
+Accept: application/json
+
+### Price trends — default window (6 months, from the record's own default)
+GET {{host}}/api/v1/pricing/trends
+Accept: application/json
+
+### Price trends — explicit window
+GET {{host}}/api/v1/pricing/trends?months=12
+Accept: application/json
+
+### Nearby suppliers — origin is Manila. lat/lng are required, deliberately not defaulted.
+GET {{host}}/api/v1/suppliers/nearby?lat=14.5995&lng=120.9842&limit=5
+Accept: application/json
+
+### Featured lots — default limit (10)
+GET {{host}}/api/v1/listings/featured
+Accept: application/json
+
+### Recent orders — note `status` comes back lowercase and `id` is the human reference "AK-1003"
+GET {{host}}/api/v1/orders/recent?limit=5
+Accept: application/json
+
+
+############################################################
+# Rejections — these are the responses worth eyeballing
+############################################################
+# Every request below MUST fail, and the point of keeping them here is that the *shape* of the
+# failure is part of the contract. A 200 from any of these is a bug, not a lenient API.
+
+### months above the ceiling — 400 naming the parameter, NOT a silent clamp to 24
+# A clamp would render a two-year chart for a caller who asked for eighty, produce no error
+# anywhere, and leave the frontend bug undiscoverable.
+GET {{host}}/api/v1/pricing/trends?months=999
+Accept: application/json
+
+### months below the floor — 400
+GET {{host}}/api/v1/pricing/trends?months=0
+Accept: application/json
+
+### limit above the ceiling — 400
+GET {{host}}/api/v1/orders/recent?limit=51
+Accept: application/json
+
+### Missing origin — 400, and `detail` names the parameter.
+# This one is a regression test: the global handler used to answer 500 for every exception,
+# including model-binding failures. The caller was told the server was broken and to retry,
+# when retrying could never help, and it was logged at Error so a scan of the query string
+# would bury real faults.
+GET {{host}}/api/v1/suppliers/nearby
+Accept: application/json
+
+### Latitude off the globe — 400. Note that (0,0) is NOT rejected: it is a real coordinate in
+# the Gulf of Guinea, which is exactly why lat/lng have no default.
+GET {{host}}/api/v1/suppliers/nearby?lat=999&lng=0
+Accept: application/json
+
+### Non-numeric coordinates — 400 from model binding, not 500
+GET {{host}}/api/v1/suppliers/nearby?lat=abc&lng=def
+Accept: application/json
+
+
+############################################################
+# CORS — only meaningful against the deployed host
+############################################################
+# CORS failures are invisible from here. The server answers 200 with clean logs and curl works
+# perfectly; only a browser refuses, and only because the response lacks a header. So the thing
+# to inspect below is the *headers*, not the status or the body.
+
+### Preflight from the real frontend origin — expect Access-Control-Allow-Origin echoed back
+OPTIONS {{host}}/api/v1/orders/recent
+Origin: https://aniko-agri.netlify.app
+Access-Control-Request-Method: GET
+
+### Preflight from an origin that is not allowed — expect NO Access-Control-Allow-Origin header.
+# The status will still be 2xx/4xx and the body will still look fine. Absence of the header is
+# the entire signal.
+OPTIONS {{host}}/api/v1/orders/recent
+Origin: https://not-aniko.example.com
+Access-Control-Request-Method: GET
 
 ###

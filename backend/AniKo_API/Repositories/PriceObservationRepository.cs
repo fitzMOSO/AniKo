@@ -42,7 +42,16 @@ public sealed class PriceObservationRepository : Repository<PriceObservation>, I
                 // this is exact-decimal arithmetic end to end. The same expression on a
                 // float-typed column would return a binary float and the chart's y-axis would
                 // pick up rounding noise that no test would ever pin down.
-                g.Average(p => p.PricePerKg)))
+                //
+                // Rounded to 2dp because AVG(numeric) keeps extra scale to stay exact: averaging
+                // 26.20 and 26.20 yields `26.2000000000000000`, which is the correct number and a
+                // terrible thing to put on the wire. JSON.parse reads it back as 26.2 so nothing
+                // breaks, but it roughly triples the size of the largest response for digits that
+                // carry no information — and these are pesos per kilo, where the second decimal
+                // place is already the smallest unit that exists.
+                //
+                // Rounded in SQL, not in memory, so the projection stays a projection.
+                Math.Round(g.Average(p => p.PricePerKg), 2)))
             .ToListAsync(cancellationToken);
     }
 }

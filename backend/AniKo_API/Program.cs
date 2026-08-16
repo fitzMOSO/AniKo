@@ -137,6 +137,7 @@ app.MapScalarApiReference();
 
 app.MapHealthChecks("/health");
 app.MapInfoEndpoints();
+app.MapDashboardEndpoints();
 
 // Before the first request, not on a background thread: a request served against
 // a half-migrated schema is the thing this exists to prevent, and Render's health
