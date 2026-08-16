@@ -28,6 +28,19 @@ builder.Services.AddHealthChecks();
 builder.Services.AddDbContext<AniKoDbContext>(options =>
     options.UseNpgsql(ConnectionStringResolver.Resolve(builder.Configuration)));
 
+// ---- CORS ---------------------------------------------------------------
+// The dashboard is served from Netlify and this API from Render, so every call
+// the frontend makes is cross-origin. Origins come from configuration rather
+// than a constant: deploy previews and a renamed site are a config change, not
+// a rebuild. AllowAnyOrigin is deliberately not used — it is indistinguishable
+// from a correct policy today, while every endpoint is public read-only data,
+// and stops being defensible the moment one isn't.
+builder.Services.AddCors(options =>
+    options.AddPolicy(CorsPolicy.PolicyName, policy => policy
+        .WithOrigins(CorsPolicy.ResolveOrigins(builder.Configuration))
+        .AllowAnyHeader()
+        .AllowAnyMethod()));
+
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
@@ -48,6 +61,11 @@ var app = builder.Build();
 app.UseForwardedHeaders();
 
 app.UseExceptionHandler();
+
+// Before the endpoints, and before HTTPS redirection: a preflight OPTIONS that
+// gets redirected never reaches the CORS middleware, and the browser reports it
+// as a CORS failure rather than a redirect.
+app.UseCors(CorsPolicy.PolicyName);
 
 // TLS terminates at Render's edge. Redirecting inside the container sees plain
 // HTTP and produces a redirect loop, so this only runs when self-hosted.

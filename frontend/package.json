@@ -1,5 +1,5 @@
 {
-  "name": "frontend",
+  "name": "aniko-frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,8 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "typecheck": "tsc -b --noEmit",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
