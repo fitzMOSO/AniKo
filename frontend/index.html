@@ -2,14 +2,24 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!--
+      Cut from the glyph in public/brand/aniko-logo.png. PNG rather than SVG
+      because the mark only exists as raster art — an SVG here would just be a
+      base64 PNG wearing a vector's clothes.
+    -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AniKo — Harvest Better. Trade Together.</title>
     <meta
       name="description"
       content="A farm management and produce trading platform: track fields, plan harvests and trade produce, with mapping and multi-language support."
     />
-    <meta name="theme-color" content="#070a13" />
+    <!-- The brand's deep green (--color-green-950), matching the icon tile.
+         This was #070a13 — the FitzDev Portfolio's near-black, inherited along
+         with its favicon, and wrong against AniKo's cream page. -->
+    <meta name="theme-color" content="#023c16" />
 
     <!--
       Link preview (Open Graph + Twitter Card).
