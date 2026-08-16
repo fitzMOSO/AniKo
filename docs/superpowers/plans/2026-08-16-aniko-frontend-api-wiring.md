@@ -521,10 +521,15 @@ In `backend/AniKo_API.Tests/Endpoints/DashboardEndpointsHappyPathTests.cs`, repl
 `var windowStart = DateTime.UtcNow.AddDays(-30);` with:
 
 ```csharp
-        // Anchored on the seed epoch, not DateTime.UtcNow — see the doc comment above. The
-        // service resolves the same instant through IDashboardClock, so this expectation and the
-        // figure it checks are computed over the same 30 days on every future run.
-        var windowStart = PostgresFixture.SeedEpoch.AddDays(-30);
+        // Anchored on the latest order, not DateTime.UtcNow — see the doc comment above. This is
+        // the same instant IDashboardClock resolves (MAX(created_at)), so this expectation and
+        // the figure it checks are computed over the same 30 days on every future run.
+        //
+        // Not SeedEpoch.AddDays(-30): the newest seeded order sits at SeedEpoch - 1 day + 3
+        // hours, so an epoch-anchored window opens 21 hours late and drops the order at
+        // SeedEpoch - 31 days + 9 hours that the service counts.
+        var referenceNow = await db.Orders.AsNoTracking().MaxAsync(o => o.CreatedAt);
+        var windowStart = referenceNow.AddDays(-30);
 ```
 
 Replace the XML doc block above the test with:
@@ -539,9 +544,16 @@ Replace the XML doc block above the test with:
     /// that made it a test with an expiry date: the seeded orders span <c>SeedEpoch - 1..36
     /// days</c>, so around 2026-09-06 the window would have contained nothing and the
     /// <c>spend &gt; 0</c> assertion below would have failed on a service that was working
-    /// correctly. It anchors on <see cref="PostgresFixture.SeedEpoch"/> now because
-    /// <c>IDashboardClock</c> resolves the same instant, so both sides of the comparison move
-    /// together or not at all.
+    /// correctly. It anchors on the latest seeded order now — the same instant
+    /// <c>IDashboardClock</c> resolves — so both sides of the comparison move together or not
+    /// at all.
+    /// <para>
+    /// Deliberately NOT <see cref="PostgresFixture.SeedEpoch"/>. The newest order sits at
+    /// <c>SeedEpoch - 1 day + 3 hours</c>, so an epoch-anchored window opens 21 hours late and
+    /// drops the order at <c>SeedEpoch - 31 days + 9 hours</c> that the service counts. A
+    /// constant that lands *near* the reference instant is still a second anchor, which is the
+    /// thing this whole change exists to remove.
+    /// </para>
     /// </remarks>
 ```
 
@@ -557,10 +569,17 @@ stays green while verifying nothing.
 Replace `var now = DateTime.UtcNow;` and the `lookbackStart` line below it with:
 
 ```csharp
-        // Anchored on the epoch for the same reason as the test above, but this one failed more
-        // quietly: once the wall-clock lookback stopped matching any observation, `expected`
-        // computed to 0m and the assertion became 0m == 0m — a green test verifying nothing.
-        var now = PostgresFixture.SeedEpoch;
+        // Anchored on the latest order for the same reason as the test above — one reference
+        // instant, shared with the service — but this one failed more quietly: once the
+        // wall-clock lookback stopped matching any observation, `expected` computed to 0m and
+        // the assertion became 0m == 0m, a green test verifying nothing.
+        //
+        // Note this assertion is not sensitive to the anchor TODAY: AveragePricesAsync picks the
+        // latest month present in the data, and every candidate lookback here still contains
+        // 2026-08. The anchor is what stops that from silently becoming 0m == 0m later, not
+        // something the current run can demonstrate. The mutation check in Task 3 says so out
+        // loud rather than implying this test guards more than it does.
+        var now = await db.Orders.AsNoTracking().MaxAsync(o => o.CreatedAt);
         var lookbackStart = new DateOnly(now.Year, now.Month, 1).AddMonths(-2);
 ```
 
@@ -613,7 +632,7 @@ less than no test, because it also consumes the attention that would have found 
 **Requires Docker.** Verified available: Docker 29.6.2, and both tests execute in ~850ms against a
 warm daemon with 0 skipped.
 
-- [ ] **Step 1: Mutation-check — break the clock and confirm both tests fail**
+- [ ] **Step 1: Mutation-check — break the clock and confirm the stats test fails**
 
 Temporarily edit `backend/AniKo_API/Services/DashboardClock.cs`, replacing the body of
 `ReferenceNowAsync` with the pre-fix behaviour:
@@ -624,9 +643,26 @@ Temporarily edit `backend/AniKo_API/Services/DashboardClock.cs`, replacing the b
 
 Then run: `dotnet test backend/AniKo_API.Tests --filter "FullyQualifiedName~OverviewStatsFiguresAgreeWithTheSeededOrders|FullyQualifiedName~OverviewStatsAveragePriceUsesTheLatestObservedMonth"`
 
-Expected: **BOTH FAIL.** `OverviewStatsFiguresAgreeWithTheSeededOrders` fails because today's
-wall clock is 2026-08-16 and the epoch-anchored expectation now disagrees with the wall-clock
-figure. `OverviewStatsAveragePriceUsesTheLatestObservedMonth` fails for the same reason.
+Expected: **`OverviewStatsFiguresAgreeWithTheSeededOrders` FAILS.** Its expectation is anchored on
+`MAX(created_at)` while the mutated service reads a wall clock 16 days later, so the two windows
+cover different orders — which is the whole property under test.
+
+Expected: **`OverviewStatsAveragePriceUsesTheLatestObservedMonth` STILL PASSES,** and this is not a
+failure of the mutation check — it is the honest state of that test, worth stating rather than
+discovering later. Under the mutation the service computes `firstMonth = 2026-06-01` from a
+wall clock of 2026-08-16; the test computes `2026-05-01` from the latest order. Both lookbacks
+still contain the 2026-08 observations, and `AveragePricesAsync` picks the latest month *present in
+the data* regardless of where the window opens — so the assertion cannot tell the two apart.
+
+That test therefore guards against a future vacuity (once the wall clock passes ~2026-10, the
+service's lookback clears the seeded observations entirely and it short-circuits to `0m`), not
+against a clock regression today. **Do not "fix" this by tightening the assertion** — it is
+measuring `AveragePricesAsync`'s latest-month-present behaviour, which is correct and separately
+pinned. Record the result and move on.
+
+**If `OverviewStatsFiguresAgreeWithTheSeededOrders` passes under the mutation, stop and report.**
+That is the one that must have teeth, and a green result there means the anchor change bought
+nothing.
 
 **If either test still passes, stop and report it.** A passing test here means the assertion is
 not measuring the clock and the whole task has produced nothing — which is exactly the failure
