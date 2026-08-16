@@ -599,11 +599,16 @@ Neither needs the wall clock; both need to know when things last
 happened. Every frozen instant and asserted date in the unit tests is
 unchanged, so the existing assertions keep their meaning.
 
-The two integration tests are re-anchored on SeedEpoch in the same
+The two integration tests are re-anchored on MAX(created_at) in the same
 commit, because they must be: one computed its expectation from
 DateTime.UtcNow and fails the moment the service stops doing the same.
 The other passed, which was worse — its expectation drifted with the
 service, so an empty window would have made it assert 0m == 0m.
+
+Not SeedEpoch. The newest seeded order sits 3 hours past midnight, so an
+epoch-anchored window opens 21 hours late and drops an order the service
+counts. A constant landing near the reference instant is still a second
+anchor, which is the thing this change exists to remove.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
