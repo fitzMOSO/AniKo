@@ -3,10 +3,9 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { formatCurrency } from '@/lib/format'
+import { formatCurrency, formatWeight } from '@/lib/format'
 import { RequestQuoteDialog } from './RequestQuoteDialog'
 import type { Lot } from './types'
-import { formatVolume } from './volume'
 
 /**
  * First letter of the first two words of the lot name, for the photo stand-in.
@@ -117,10 +116,10 @@ export function LotCard({ lot }: { lot: Lot }) {
         {t('lots.price_per_kg', { price: formatCurrency(lot.pricePerKg, i18n.language) })}
       </p>
       <p className="text-sm text-muted-fg">
-        {t('lots.volume', { volume: formatVolume(lot.volumeKg, i18n.language) })}
+        {t('lots.volume', { volume: formatWeight(lot.volumeKg, i18n.language) })}
       </p>
       <p className="text-sm text-muted-fg">
-        {t('lots.min_order', { volume: formatVolume(lot.minOrderKg, i18n.language) })}
+        {t('lots.min_order', { volume: formatWeight(lot.minOrderKg, i18n.language) })}
       </p>
 
       {/* `mt-auto` so the CTA lines up across cards of unequal text length. */}

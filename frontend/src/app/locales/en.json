@@ -66,7 +66,7 @@
   "lots.price_per_kg": "{{price}}/kg",
   "lots.min_order": "Min. order {{volume}}",
   "lots.request_quote": "Request Quote",
-  "lots.request_quote_for": "Request a quote for {{name}}",
+  "lots.request_quote_for": "Request Quote for {{name}}",
   "lots.bookmark_add": "Save {{name}}",
   "lots.bookmark_remove": "Remove {{name}} from saved",
   "lots.scroller_label": "Featured wholesale lots",

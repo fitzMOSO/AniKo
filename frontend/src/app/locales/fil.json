@@ -66,7 +66,7 @@
   "lots.price_per_kg": "{{price}}/kg",
   "lots.min_order": "Pinakamababang order {{volume}}",
   "lots.request_quote": "Humingi ng Presyo",
-  "lots.request_quote_for": "Humingi ng presyo para sa {{name}}",
+  "lots.request_quote_for": "Humingi ng Presyo para sa {{name}}",
   "lots.bookmark_add": "I-save ang {{name}}",
   "lots.bookmark_remove": "Alisin ang {{name}} sa mga naka-save",
   "lots.scroller_label": "Mga itinatampok na pakyawan",

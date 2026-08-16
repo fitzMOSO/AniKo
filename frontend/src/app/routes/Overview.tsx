@@ -1,13 +1,20 @@
 import { useTranslation } from 'react-i18next'
+import { FeaturedLotsPanel } from '@/features/lots/FeaturedLotsPanel'
+import { RecentOrdersPanel } from '@/features/orders/RecentOrdersPanel'
 import { StatTilesRow } from '@/features/overview/StatTilesRow'
 import { LazyMarketPriceTrendsPanel } from '@/features/pricing/MarketPriceTrendsPanel.lazy'
 import { NearbySuppliersPanel } from '@/features/suppliers/NearbySuppliersPanel'
 import { useSession } from '@/lib/session'
 
 /**
- * Empty slots on purpose. Phases F-G fill the rest:
- *   lots      -> FeaturedLots          (Phase F)
- *   orders    -> RecentOrders          (Phase G)
+ * Every slot is filled as of Phase G. Each panel owns its own data — it calls
+ * its own hook rather than being handed props from here — so this route stays a
+ * layout and nothing else, and Phase I can swap a panel's fixtures for an API
+ * call without this file changing at all.
+ *
+ * Only the pricing panel is lazy. It carries Recharts, which is 368 kB on its
+ * own; the rest are small enough that a dynamic import would cost a round trip
+ * on a rural connection to defer a few kB.
  */
 export function Overview() {
   const { t } = useTranslation()
@@ -31,8 +38,12 @@ export function Overview() {
       <section data-slot="suppliers" className="col-span-full lg:col-span-4">
         <NearbySuppliersPanel />
       </section>
-      <section data-slot="lots" className="col-span-full lg:col-span-8" />
-      <section data-slot="orders" className="col-span-full lg:col-span-4" />
+      <section data-slot="lots" className="col-span-full lg:col-span-8">
+        <FeaturedLotsPanel />
+      </section>
+      <section data-slot="orders" className="col-span-full lg:col-span-4">
+        <RecentOrdersPanel />
+      </section>
     </>
   )
 }

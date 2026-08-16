@@ -119,7 +119,7 @@ describe('LotCard', () => {
     it('names the trigger for the lot it belongs to', () => {
       renderCard()
       const trigger = screen.getByRole('button', {
-        name: 'Request a quote for Premium White Rice',
+        name: 'Request Quote for Premium White Rice',
       })
       expect(trigger).toHaveTextContent('Request Quote')
     })
@@ -129,7 +129,7 @@ describe('LotCard', () => {
       renderCard()
 
       await user.click(
-        screen.getByRole('button', { name: 'Request a quote for Premium White Rice' }),
+        screen.getByRole('button', { name: 'Request Quote for Premium White Rice' }),
       )
 
       const dialog = await screen.findByRole('dialog')
@@ -143,7 +143,7 @@ describe('LotCard', () => {
       renderCard()
 
       await user.click(
-        screen.getByRole('button', { name: 'Request a quote for Premium White Rice' }),
+        screen.getByRole('button', { name: 'Request Quote for Premium White Rice' }),
       )
       expect(await screen.findByRole('dialog')).toBeInTheDocument()
 
@@ -156,7 +156,7 @@ describe('LotCard', () => {
       renderCard()
 
       const trigger = screen.getByRole('button', {
-        name: 'Request a quote for Premium White Rice',
+        name: 'Request Quote for Premium White Rice',
       })
       await user.click(trigger)
 
@@ -176,7 +176,7 @@ describe('LotCard', () => {
       renderCard()
 
       await user.click(
-        screen.getByRole('button', { name: 'Request a quote for Premium White Rice' }),
+        screen.getByRole('button', { name: 'Request Quote for Premium White Rice' }),
       )
 
       const dialog = await screen.findByRole('dialog')

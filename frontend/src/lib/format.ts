@@ -49,6 +49,47 @@ export function formatDistance(km: number, locale: string): string {
 }
 
 /**
+ * Whole kilogrammes, for both lot volumes and order quantities.
+ *
+ * One function rather than two: Phases F and G independently wrote
+ * `formatVolume` and `formatQuantity` with byte-identical bodies. "Volume" and
+ * "quantity" are different words for the same measurement here, and two names
+ * for one behaviour is how the two drift apart later.
+ *
+ * Whole kilos, no decimals: wholesale lots are quoted in sacks, cavans and
+ * tonnes, so a decimal place on a 12,000 kg lot is precision the seller never
+ * offered.
+ */
+export function formatWeight(kg: number, locale: string): string {
+  return new Intl.NumberFormat(resolve(locale), {
+    style: 'unit',
+    unit: 'kilogram',
+    unitDisplay: 'short',
+    maximumFractionDigits: 0,
+  }).format(kg)
+}
+
+/**
+ * A calendar date from an ISO `YYYY-MM-DD` string.
+ *
+ * `timeZone: 'UTC'` is not optional. A date-only ISO string parses as UTC
+ * midnight, so formatting it in any negative-offset zone renders the *previous
+ * day* — a delivery estimate that silently slips depending on where the browser
+ * is. Every date in this codebase is pinned to UTC for that reason.
+ *
+ * Month is abbreviated, never numeric: `08/09` is the 9th of August in Manila
+ * and the 8th of September to half the readers of the same table.
+ */
+export function formatDate(iso: string, locale: string): string {
+  return new Intl.DateTimeFormat(resolve(locale), {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${iso}T00:00:00Z`))
+}
+
+/**
  * Magnitude only — the caller renders an arrow for direction, so a minus sign
  * here would state it twice.
  */

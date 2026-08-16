@@ -2,7 +2,7 @@ import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { formatDeliveryDate, formatQuantity } from './formatting'
+import { formatDate, formatWeight } from '@/lib/format'
 import { OrderStatusBadge } from './OrderStatusBadge'
 import { useRecentOrders } from './useRecentOrders'
 
@@ -135,7 +135,7 @@ export function RecentOrdersPanel({ limit = 5 }: RecentOrdersPanelProps) {
                   <td className={`${CELL} text-muted-fg`}>{order.supplier}</td>
 
                   <td className={`${CELL} text-right tabular-nums text-primary`}>
-                    {formatQuantity(order.quantityKg, i18n.language)}
+                    {formatWeight(order.quantityKg, i18n.language)}
                   </td>
 
                   <td className={CELL}>
@@ -143,7 +143,7 @@ export function RecentOrdersPanel({ limit = 5 }: RecentOrdersPanelProps) {
                   </td>
 
                   <td className={`${CELL} whitespace-nowrap text-muted-fg`}>
-                    {formatDeliveryDate(order.estimatedDelivery, i18n.language)}
+                    {formatDate(order.estimatedDelivery, i18n.language)}
                   </td>
                 </tr>
               ))}

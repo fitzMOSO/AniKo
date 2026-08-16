@@ -30,7 +30,7 @@ describe('FeaturedLotsPanel', () => {
     render(<FeaturedLotsPanel />)
     for (const lot of FEATURED_LOTS) {
       expect(
-        screen.getByRole('button', { name: `Request a quote for ${lot.name}` }),
+        screen.getByRole('button', { name: `Request Quote for ${lot.name}` }),
       ).toBeInTheDocument()
     }
   })
