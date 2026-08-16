@@ -85,6 +85,14 @@ builder.Services.AddScoped<IRecentOrdersService, RecentOrdersService>();
 // one without touching this file.
 builder.Services.AddSingleton(TimeProvider.System);
 
+// The dashboard's own clock, which is not the system clock. See IDashboardClock: every window
+// on this dashboard is defined relative to "now", and reading that off the wall clock is only
+// correct while data keeps arriving. The cache is a singleton because one page view is five
+// separate requests and therefore five separate scopes; the clock is scoped because it needs a
+// scoped repository.
+builder.Services.AddSingleton<DashboardClockCache>();
+builder.Services.AddScoped<IDashboardClock, DashboardClock>();
+
 // ---- Validation ----------------------------------------------------------
 // Scanned rather than registered one by one. The trade is deliberate: a hand
 // written list is greppable but silently incomplete the day someone adds a

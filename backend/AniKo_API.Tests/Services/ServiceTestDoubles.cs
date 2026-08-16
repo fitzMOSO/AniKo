@@ -64,6 +64,11 @@ internal sealed class FakeOrderRepository : UnusedRepositoryMembers<Order>, IOrd
 
     public int? LastRecentLimit { get; private set; }
 
+    public DateTime? LatestCreatedAt { get; init; }
+
+    /// <summary>How many times the clock actually hit the database, so the cache is assertable.</summary>
+    public int LatestCreatedAtCalls { get; private set; }
+
     public Task<IReadOnlyList<OrderStatsRow>> ListSinceAsync(
         DateTime since,
         CancellationToken cancellationToken = default)
@@ -85,6 +90,12 @@ internal sealed class FakeOrderRepository : UnusedRepositoryMembers<Order>, IOrd
 
         IReadOnlyList<RecentOrderRow> rows = [.. RecentRows.Take(limit)];
         return Task.FromResult(rows);
+    }
+
+    public Task<DateTime?> LatestCreatedAtAsync(CancellationToken cancellationToken = default)
+    {
+        LatestCreatedAtCalls++;
+        return Task.FromResult(LatestCreatedAt);
     }
 }
 
@@ -196,4 +207,19 @@ internal static class Rows
                 Verified = true,
             },
             crops);
+}
+
+/// <summary>
+/// A dashboard clock pinned to a chosen instant, for services that only care what "now" is.
+/// </summary>
+/// <remarks>
+/// The services under test used to take <see cref="FrozenTimeProvider"/> directly. They take
+/// this now, which is a strictly narrower dependency: a service that computes windows should not
+/// also be able to read the wall clock, because that is precisely the capability that produced
+/// the drift <see cref="AniKo_API.Services.IDashboardClock"/> exists to remove.
+/// </remarks>
+internal sealed class StubDashboardClock(DateTime referenceNow) : AniKo_API.Services.IDashboardClock
+{
+    public Task<DateTime> ReferenceNowAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(DateTime.SpecifyKind(referenceNow, DateTimeKind.Utc));
 }

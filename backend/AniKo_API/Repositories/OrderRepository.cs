@@ -65,4 +65,15 @@ public sealed class OrderRepository : Repository<Order>, IOrderRepository
                 o.CreatedAt))
             .ToListAsync(cancellationToken);
     }
+
+    /// <inheritdoc/>
+    public async Task<DateTime?> LatestCreatedAtAsync(CancellationToken cancellationToken = default)
+    {
+        // Projected to a nullable before Max, not Max over a non-nullable. EF translates the
+        // former to a plain MAX() that yields NULL on an empty table; the latter throws
+        // InvalidOperationException on the empty sequence, turning "no orders yet" into a 500.
+        return await Query()
+            .Select(o => (DateTime?)o.CreatedAt)
+            .MaxAsync(cancellationToken);
+    }
 }

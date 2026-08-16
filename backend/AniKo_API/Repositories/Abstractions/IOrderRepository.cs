@@ -29,4 +29,14 @@ public interface IOrderRepository : IRepository<Order>
     /// <see cref="OrderStatsRow"/>.</param>
     /// <param name="cancellationToken">Aborts the query when the request is abandoned.</param>
     Task<IReadOnlyList<OrderStatsRow>> ListSinceAsync(DateTime since, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// When the most recent order was placed, or <c>null</c> if there are none.
+    /// </summary>
+    /// <remarks>
+    /// This is what <see cref="AniKo_API.Services.IDashboardClock"/> anchors its windows on. A
+    /// single <c>MAX(created_at)</c> rather than <c>ListRecentAsync(1)</c>: the latter projects a
+    /// row through two joins to read one timestamp off it.
+    /// </remarks>
+    Task<DateTime?> LatestCreatedAtAsync(CancellationToken cancellationToken = default);
 }
