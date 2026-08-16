@@ -1,9 +1,18 @@
-import { render, screen, within } from '@testing-library/react'
+import { render as rtlRender, screen, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { haversineKm } from '@/lib/geo'
 import { BUYER_LOCATION } from './fixtures'
 import { SupplierList } from './SupplierList'
 import type { NearbySupplier } from './types'
+
+/*
+ * Rows carry a router <Link> to the supplier profile, so they cannot render
+ * outside a Router. The harness supplies the cheapest one that works rather
+ * than the rows falling back to a plain <a>, which in a SPA would mean a full
+ * page reload on every profile click.
+ */
+const render = (ui: React.ReactElement) => rtlRender(<MemoryRouter>{ui}</MemoryRouter>)
 
 function nearby(overrides: Partial<NearbySupplier> = {}): NearbySupplier {
   const base = {
@@ -71,6 +80,17 @@ describe('SupplierList', () => {
     const names = screen.getAllByRole('listitem').map((li) => li.textContent)
     expect(names[0]).toContain('Far Farm')
     expect(names[1]).toContain('Near Farm')
+  })
+
+  /*
+   * The visible text is identical on every row, so the accessible name is the
+   * only thing telling six "View Profile" links apart. If it ever collapses
+   * back to the bare visible text, this fails.
+   */
+  it('gives each profile link a name that says whose profile it is', () => {
+    render(<SupplierList suppliers={[nearby()]} />)
+    const link = screen.getByRole('link', { name: 'View profile for GreenFields Farm' })
+    expect(link).toHaveAttribute('href', expect.stringContaining('supplier=sup-greenfields'))
   })
 
   it('says so plainly when there is nothing to list', () => {

@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { formatDistance } from '@/lib/format'
@@ -64,12 +65,30 @@ export function SupplierRow({ supplier }: { supplier: NearbySupplier }) {
           which drowns the rows in any query that counts them, for no gain the
           badge text does not already carry.
         */}
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {supplier.crops.map((crop) => (
             <Badge key={crop} variant="outline" className="text-muted-fg">
               {t(`crop.${crop}`)}
             </Badge>
           ))}
+
+          {/*
+            No `/suppliers/:id` route exists yet, so this deep-links into the
+            marketplace instead of pointing at a dead `#`. The id travels as a
+            query param because that is what Phase I will read when the real
+            profile route lands — the link changes target then, not shape.
+
+            The visible text is the same three words on every row, so the
+            accessible name carries the supplier name. Otherwise a screen-reader
+            user listing the links hears "View Profile" six times over.
+          */}
+          <Link
+            to={`/marketplace?supplier=${encodeURIComponent(supplier.id)}`}
+            aria-label={t('suppliers.view_profile_for', { name: supplier.name })}
+            className="ml-auto rounded-lg px-2 py-1 text-sm font-medium text-primary underline underline-offset-2"
+          >
+            {t('suppliers.view_profile')}
+          </Link>
         </div>
       </div>
     </li>

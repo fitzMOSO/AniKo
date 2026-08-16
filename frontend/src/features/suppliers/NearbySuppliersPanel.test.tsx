@@ -1,7 +1,11 @@
-import { render, screen, within } from '@testing-library/react'
+import { render as rtlRender, screen, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { ALL_SUPPLIERS } from './fixtures'
 import { NearbySuppliersPanel } from './NearbySuppliersPanel'
+
+// Rows link to supplier profiles, so the panel needs a Router in scope.
+const render = (ui: React.ReactElement) => rtlRender(<MemoryRouter>{ui}</MemoryRouter>)
 
 const VERIFIED = ALL_SUPPLIERS.filter((s) => s.verified)
 const UNVERIFIED = ALL_SUPPLIERS.filter((s) => !s.verified)
