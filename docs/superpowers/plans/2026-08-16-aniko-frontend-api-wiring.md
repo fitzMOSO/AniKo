@@ -751,6 +751,199 @@ Expected: 12 points, the last dated `2026-08-01`, and **no point where all three
 
 No commit. Report the SHA, the `spend` value, and the first and last trend dates.
 
+**Outcome (2026-08-16):** SHA matched (`45a3d6a`, no clearCache needed), `spend` = 560755.00 —
+the change did its job. But Step 4's expectation was WRONG, and the live probe is what caught it.
+Trends returned first `2025-08-01`, last `2026-07-01`, with an all-zero point at the *leading*
+edge. Diagnosis and fix are Task 4b.
+
+---
+
+## Task 4b: Anchor price windows on the observations they display
+
+**Why this exists.** Task 4's live probe found the trends window sitting one month behind the
+data. This is not drift and not a stale deploy — it is exact, stable, and it is *the same defect
+Tasks 1-2 set out to remove*, reappearing one level down.
+
+`IDashboardClock` resolves "now" as `MAX(orders.created_at)` = **2026-07-31 03:00Z**, so
+`PriceTrendsService` computes `currentMonth` = **2026-07** and a 12-month window of
+**2025-08 … 2026-07**. But price observations are seeded on a different anchor —
+`DemoDataSeeder.FirstHistoryMonth` (L423-424) counts back from `SeedEpoch`'s month, so they span
+**2025-09 … 2026-08**. The window therefore opens one month before the first observation and
+closes one month before the last: a leading all-zero column, and 2026-08's observations never
+shown.
+
+The lesson is the one this plan has now learned three times. **There is no single "now."** There
+is one per dataset. Orders-now is 2026-07-31; observations-now is 2026-08. A clock that answers
+for orders and is then consumed by a price window is a second anchor wearing the first one's
+clothes.
+
+So: **each window anchors on the data it displays.** Order-derived figures keep
+`IDashboardClock`. Price-derived figures anchor on the latest observation month — which is
+exactly what the approved spec asked for ("compute the lookback from the latest observation
+present in the data rather than from wall-clock now") and what `AveragePricesAsync` already does
+downstream of its filter. This task moves that principle from the projection into the filter.
+
+**Why the 411 tests are green anyway:** both service test files pin
+`StubDashboardClock(2026-08-16)`, which yields 2025-09…2026-08 — perfectly aligned with the seed.
+The stub feeds a wall-clock-shaped instant the live clock no longer produces, so the suite
+exercises a month alignment production does not have. Step 1 fixes that first, precisely so the
+tests can fail.
+
+**Files:**
+- Modify: `backend/AniKo_API/Repositories/Abstractions/IPriceObservationRepository.cs`
+- Modify: `backend/AniKo_API/Repositories/PriceObservationRepository.cs`
+- Modify: `backend/AniKo_API/Services/PriceTrendsService.cs`
+- Modify: `backend/AniKo_API/Services/OverviewStatsService.cs` (`AveragePricesAsync` filter only)
+- Test: `backend/AniKo_API.Tests/Services/PriceTrendsServiceTests.cs`,
+  `OverviewStatsServiceTests.cs`, `ServiceTestDoubles.cs`
+
+**Interfaces:**
+- Produces: `Task<DateOnly?> IPriceObservationRepository.LatestMonthAsync(CancellationToken)`.
+  Returns `null` on an empty table — same nullable-projection-before-Max shape as
+  `IOrderRepository.LatestCreatedAtAsync`.
+
+- [ ] **Step 1: Re-anchor the two service tests so they can see the defect**
+
+In `PriceTrendsServiceTests.cs` and `OverviewStatsServiceTests.cs`, the frozen `Now` is
+`2026-08-16`, which coincidentally aligns with the seed. Change the stub clock in **PriceTrends'**
+tests to `new StubDashboardClock(new DateTime(2026, 7, 31, 3, 0, 0, DateTimeKind.Utc))` — the
+instant production actually resolves.
+
+Do NOT change the asserted month strings. The whole point is that the window must still end on
+the latest observation month regardless of what the order clock says.
+
+- [ ] **Step 2: Run and confirm RED**
+
+Run: `dotnet test backend/AniKo_API.Tests --filter FullyQualifiedName~PriceTrendsServiceTests`
+Expected: FAIL — the window slides one month back, so the asserted first/last months no longer
+match. If these tests stay GREEN, STOP: it means the fake price repository is not modelling the
+seed's month range, and this task would be verifying nothing.
+
+- [ ] **Step 3: Add `LatestMonthAsync` to the repository**
+
+Interface:
+
+```csharp
+    /// <summary>
+    /// The most recent month that has any observation, or <c>null</c> when the table is empty.
+    /// </summary>
+    /// <remarks>
+    /// This is the price series' own "now". It is deliberately NOT
+    /// <see cref="IDashboardClock"/>: that resolves from orders, and orders and observations are
+    /// seeded on different anchors, so borrowing one for the other reintroduces exactly the
+    /// two-drifting-anchors defect this codebase has now fixed twice.
+    /// </remarks>
+    Task<DateOnly?> LatestMonthAsync(CancellationToken cancellationToken = default);
+```
+
+Implementation:
+
+```csharp
+    public async Task<DateOnly?> LatestMonthAsync(CancellationToken cancellationToken = default)
+    {
+        // Nullable projection before Max: MaxAsync over a non-nullable DateOnly throws on an
+        // empty table rather than yielding a null, and an empty price table is a legitimate
+        // state (a fresh database before the seeder runs), not an error.
+        return await Query().Select(o => (DateOnly?)o.Month).MaxAsync(cancellationToken);
+    }
+```
+
+- [ ] **Step 4: Anchor the trends window on it**
+
+In `PriceTrendsService.GetAsync`, replace the clock-derived `currentMonth`:
+
+```csharp
+        // The price series' own latest month, not the order clock's. These are seeded on
+        // different anchors and sit one month apart in production; using the order clock here
+        // opened the window one month early, which rendered as a leading all-zero column that
+        // MissingPrice's own doc comment describes as reading like missing data.
+        //
+        // Falls back to the clock only when there are no observations at all. In that case every
+        // point is MissingPrice regardless, so the window's position is unobservable — but a
+        // window anchored on *something* keeps the point count honest.
+        var latestObserved = await priceObservations
+            .LatestMonthAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var currentMonth = latestObserved ?? DateOnlyFromClock(
+            await clock.ReferenceNowAsync(cancellationToken).ConfigureAwait(false));
+```
+
+with the private helper:
+
+```csharp
+    private static DateOnly DateOnlyFromClock(DateTime instant) =>
+        new(instant.Year, instant.Month, 1);
+```
+
+Keep the `months` no-clamp comment and the `firstMonth = currentMonth.AddMonths(-(months - 1))`
+line byte-for-byte unchanged.
+
+- [ ] **Step 5: Anchor `AveragePricesAsync`'s filter on it too**
+
+In `OverviewStatsService.AveragePricesAsync`, the `firstMonth` filter is still order-clock-derived.
+Today it happens to catch the right rows; it is the same latent defect and it is one line:
+
+```csharp
+        // Same reason as PriceTrendsService: the lookback is over observations, so it counts back
+        // from the observations' latest month. The projection below already picks the latest
+        // month PRESENT in the rows — this makes the filter agree with it instead of quietly
+        // handing it a window that could exclude everything.
+        var latestObserved = await priceObservations
+            .LatestMonthAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (latestObserved is null)
+        {
+            return (0m, 0m);
+        }
+
+        var firstMonth = latestObserved.Value.AddMonths(-(PriceLookbackMonths - 1));
+```
+
+The `now` parameter becomes unused by this method — **delete the parameter**, do not leave it
+dangling. Leave the rest of the method, including the `previousMonth` comment, untouched.
+
+- [ ] **Step 6: Add `LatestMonth` to the fake repository**
+
+In `ServiceTestDoubles.cs`, give `FakePriceObservationRepository` a `LatestMonthAsync` that
+returns the max `Month` of whatever rows it holds (null when empty) — derived from its rows, not
+a settable constant, so it cannot disagree with the data it serves.
+
+- [ ] **Step 7: Run and confirm GREEN**
+
+Run: `dotnet test backend/AniKo_API.Tests`
+Expected: PASS, 411 tests, 0 warnings. The count does not change — this task adds no tests, it
+makes the existing ones honest. If any asserted month string needed changing to get green, STOP
+and report: that means the fix moved the window somewhere the seed does not agree with.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add backend/AniKo_API/Repositories backend/AniKo_API/Services backend/AniKo_API.Tests/Services
+git commit -m "fix(backend): anchor price windows on the observations they display
+
+The trends chart opened its window one month before the first observation
+and closed one month before the last, so it showed a leading all-zero
+column and never showed the newest month. Found by probing the deploy,
+not by a test.
+
+IDashboardClock resolves from orders. Price observations are seeded on a
+different anchor and sit one month later. Borrowing the order clock for a
+price window is a second anchor wearing the first one's clothes, which is
+the exact defect the clock was introduced to remove.
+
+There is no single now. There is one per dataset. Price windows now count
+back from MAX(price_observations.month); order windows keep the clock.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
+```
+
+- [ ] **Step 9: Redeploy and re-verify Task 4's Step 4**
+
+Push, confirm `/` reports the new SHA, then re-run the trends probe. Expected this time: 12
+points, first `2025-09-01`, last `2026-08-01`, and **no all-zero point at either edge**.
+
 ---
 
 ## Task 5: Verify CORS with a real preflight
