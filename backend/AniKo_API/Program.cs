@@ -2,6 +2,10 @@ using AniKo_API.Configuration;
 using AniKo_API.Data;
 using AniKo_API.Endpoints;
 using AniKo_API.Middleware;
+using AniKo_API.Repositories;
+using AniKo_API.Services;
+using AniKo_API.Validation;
+using FluentValidation;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
@@ -41,6 +45,54 @@ builder.Services.AddCors(options =>
         .AllowAnyHeader()
         .AllowAnyMethod()));
 
+// ---- Repositories --------------------------------------------------------
+// Scoped, matching AddDbContext's own lifetime. This is not a stylistic choice:
+// each repository holds the AniKoDbContext injected into it, and a singleton
+// repository would capture the first request's context and keep using it after
+// that scope was disposed. The failure is an ObjectDisposedException on the
+// second request, or — worse, if the context survives — one DbContext shared
+// across concurrent requests, which is not thread-safe and corrupts its change
+// tracker rather than throwing.
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IListingRepository, ListingRepository>();
+builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
+builder.Services.AddScoped<IPriceObservationRepository, PriceObservationRepository>();
+builder.Services.AddScoped<ICropRepository, CropRepository>();
+
+// ---- Services ------------------------------------------------------------
+// Scoped for the same reason, transitively: these hold repositories, and a
+// singleton holding a scoped dependency is the captive-dependency bug. The DI
+// container catches that one at startup in Development and would fail the boot,
+// which is the good case — but only because ValidateScopes is on there and off
+// in Production, so it is worth getting right rather than relying on the check.
+//
+// Note for anyone adding a service that queries two repositories: they share one
+// scoped DbContext, and a DbContext permits exactly one active operation. Fan-out
+// with Task.WhenAll compiles, passes every unit test against fakes, and throws
+// InvalidOperationException the first time it runs against Postgres. Await them
+// in sequence.
+builder.Services.AddScoped<IOverviewStatsService, OverviewStatsService>();
+builder.Services.AddScoped<IPriceTrendsService, PriceTrendsService>();
+builder.Services.AddScoped<INearbySupplierService, NearbySupplierService>();
+builder.Services.AddScoped<IFeaturedLotsService, FeaturedLotsService>();
+builder.Services.AddScoped<IRecentOrdersService, RecentOrdersService>();
+
+// The clock, injected rather than read from DateTime.UtcNow. The stat tiles
+// compare a trailing 30-day window against the 30 days before it, and the price
+// chart counts months back from "now" — logic that is untestable against an
+// ambient clock, because the assertions would depend on the day the suite runs.
+// Singleton because TimeProvider.System is stateless; tests substitute a frozen
+// one without touching this file.
+builder.Services.AddSingleton(TimeProvider.System);
+
+// ---- Validation ----------------------------------------------------------
+// Scanned rather than registered one by one. The trade is deliberate: a hand
+// written list is greppable but silently incomplete the day someone adds a
+// validator and forgets the line — and an unregistered validator does not fail,
+// it just never runs, so the endpoint accepts input nobody checked. Scanning
+// makes "exists" and "is registered" the same fact.
+builder.Services.AddValidatorsFromAssemblyContaining<PriceTrendsRequestValidator>();
+
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
@@ -49,7 +101,11 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.ForwardedHeaders =
         ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     // Render's proxy is not in a known network range; clearing these accepts it.
-    options.KnownNetworks.Clear();
+    // KnownIPNetworks, not the deprecated KnownNetworks — the old property is typed
+    // in terms of Microsoft's own IPNetwork rather than System.Net.IPNetwork, and
+    // clearing either one has the same effect, so this is a rename with no
+    // behavioural change to reason about.
+    options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
