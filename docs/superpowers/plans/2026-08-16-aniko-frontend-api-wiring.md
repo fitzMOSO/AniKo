@@ -910,12 +910,72 @@ In `ServiceTestDoubles.cs`, give `FakePriceObservationRepository` a `LatestMonth
 returns the max `Month` of whatever rows it holds (null when empty) — derived from its rows, not
 a settable constant, so it cannot disagree with the data it serves.
 
+- [ ] **Step 6b: Give the four window-shape tests the data they were always describing**
+
+**This step exists because Step 7 was wrong.** It asserted the count stays at 411 on the
+assumption that the four window-shape tests in `PriceTrendsServiceTests.cs` already held
+observation rows. They do not — `GetAsync_ThreeMonths...`, `GetAsync_OneMonth...`,
+`GetAsync_TwelveMonths...` and `GetAsync_AsksTheRepositoryForTheFirstMonthOfTheWindow` all call
+`Build()` with an empty repository. Their subject is the month axis, not prices, so rows seemed
+unnecessary. Under this task's change an empty repository takes the *fallback* path, so those
+four now silently measure the fallback while their names still say "the current month."
+
+That phrase is the tell. There are now two "currents" — the observations' latest month and the
+clock's month — and these tests are pinned to a literal that no longer says which one it means.
+
+Give all four observation rows whose maximum `Month` is **2026-08**, so they exercise the
+observation-anchored path that production takes. **Every asserted month string stays byte-for-byte
+unchanged.** This edits fixture inputs, not expectations — the distinction that matters is that
+the window still has to land where the seed says, which is exactly what these tests check.
+
+For `GetAsync_AsksTheRepositoryForTheFirstMonthOfTheWindow`, note its own doc comment already
+describes this task's production bug — "a narrower one is a leading month that silently renders
+as all-zero." Leave that comment; it earned its place.
+
+- [ ] **Step 6c: Cover the fallback path deliberately**
+
+Step 6b leaves `latestObserved ?? DateOnlyFromClock(...)` with no coverage — the four tests that
+reached it did so by accident, and this task is not entitled to remove the only exercise of a
+branch while claiming to make tests honest.
+
+Add ONE test, named for what it actually does:
+
+```csharp
+    /// <summary>
+    /// With no observations at all, the window falls back to the order clock.
+    /// </summary>
+    /// <remarks>
+    /// The fallback's position is unobservable in the response — every point is
+    /// <c>MissingPrice</c> either way — so this pins the point COUNT and the fact that the window
+    /// ends on the clock's month rather than throwing or yielding nothing. A fresh database
+    /// before the seeder runs is a legitimate state, not an error.
+    /// <para>
+    /// The asserted month here is the clock's, deliberately: this is the one test whose subject
+    /// IS the clock anchor. Every other window test in this file anchors on the observations.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public async Task GetAsync_NoObservations_FallsBackToTheClockMonth()
+    {
+        var result = await Build().GetAsync(months: 3);
+
+        Assert.Equal(3, result.Points.Count);
+        Assert.Equal(["2026-05-01", "2026-06-01", "2026-07-01"], [.. result.Points.Select(p => p.Date)]);
+    }
+```
+
+Those months are the clock's (`Now` = 2026-07-31 → current month 2026-07), not the seed's. That
+is correct and is the entire point of the test.
+
 - [ ] **Step 7: Run and confirm GREEN**
 
 Run: `dotnet test backend/AniKo_API.Tests`
-Expected: PASS, 411 tests, 0 warnings. The count does not change — this task adds no tests, it
-makes the existing ones honest. If any asserted month string needed changing to get green, STOP
-and report: that means the fix moved the window somewhere the seed does not agree with.
+Expected: PASS, **412** tests, 0 warnings — 411 plus Step 6c's fallback test.
+
+If any asserted month string in an existing test needed changing to get green, STOP and report:
+that means the fix moved the window somewhere the seed does not agree with. Adding rows to a
+fixture is not changing an expectation; editing `"2026-08-01"` to `"2026-07-01"` is, and it would
+re-encode the production defect in the test.
 
 - [ ] **Step 8: Commit**
 
