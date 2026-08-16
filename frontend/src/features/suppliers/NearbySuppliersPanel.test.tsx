@@ -33,6 +33,8 @@ describe('NearbySuppliersPanel', () => {
     for (const supplier of VERIFIED) {
       expect(within(list).getByText(supplier.name)).toBeInTheDocument()
     }
+    // And no "nothing here" line alongside the rows it does have.
+    expect(screen.queryByText('No verified suppliers within range yet.')).not.toBeInTheDocument()
   })
 
   it('holds the space the map will take, rather than reflowing the list later', () => {

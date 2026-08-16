@@ -14,6 +14,8 @@ import type { NearbySupplier } from './types'
  */
 const render = (ui: React.ReactElement) => rtlRender(<MemoryRouter>{ui}</MemoryRouter>)
 
+const EMPTY_MESSAGE = 'No verified suppliers within range yet.'
+
 function nearby(overrides: Partial<NearbySupplier> = {}): NearbySupplier {
   const base = {
     id: 'sup-greenfields',
@@ -95,7 +97,19 @@ describe('SupplierList', () => {
 
   it('says so plainly when there is nothing to list', () => {
     render(<SupplierList suppliers={[]} />)
-    expect(screen.getByText('No verified suppliers within range yet.')).toBeInTheDocument()
+    expect(screen.getByText(EMPTY_MESSAGE)).toBeInTheDocument()
     expect(screen.queryByRole('list')).not.toBeInTheDocument()
+  })
+
+  /*
+   * The other half of the empty state, and the half that is easy to leave
+   * untested: a panel that renders the "nothing here" line *above* a full list
+   * passes every assertion above. Both branches are checked, so the ternary
+   * cannot decay into an unconditional render without something failing.
+   */
+  it('drops the empty message once there is something to list', () => {
+    render(<SupplierList suppliers={[nearby()]} />)
+    expect(screen.queryByText(EMPTY_MESSAGE)).not.toBeInTheDocument()
+    expect(screen.getByRole('list')).toBeInTheDocument()
   })
 })
